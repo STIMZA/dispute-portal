@@ -1,0 +1,67 @@
+<!--/* Admin dispute queue. Model: disputes (Page of AdminDisputeRow), statusFilter, statuses, pagerPath. Admin role only. */-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Dispute queue')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('admin')}"></header>
+<main>
+    <h1>Dispute queue</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!--/* Status filter links. aria-current marks the active one; each reloads the queue with ?status=... */-->
+    <nav class="filters" aria-label="Filter by status">
+        <a th:href="@{/admin/disputes}" th:classappend="${statusFilter == null} ? 'active'"
+           th:aria-current="${statusFilter == null} ? 'page'">All</a>
+        <a th:each="s : ${statuses}" th:href="@{/admin/disputes(status=${s})}" th:text="${s.label}"
+           th:classappend="${statusFilter == s} ? 'active'"
+           th:aria-current="${statusFilter == s} ? 'page'">Status</a>
+    </nav>
+
+    <p class="empty" th:if="${disputes.empty}">No disputes match this filter.</p>
+
+    <div class="table-wrap" th:unless="${disputes.empty}">
+        <table>
+            <caption class="visually-hidden">Disputes, newest first</caption>
+            <thead>
+            <tr>
+                <th scope="col">Raised</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Transaction</th>
+                <th scope="col" class="num">Amount</th>
+                <th scope="col">Reason</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="visually-hidden">Action</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="d : ${disputes.content}">
+                <td th:text="${#temporals.format(d.createdAt, 'd MMM yyyy')}">1 Jan 2026</td>
+                <td>
+                    <span class="merchant" th:text="${d.customerName}">Customer</span>
+                    <span class="meta" th:text="${d.customerUsername}">username</span>
+                </td>
+                <td>
+                    <span class="merchant" th:text="${d.merchant}">Merchant</span>
+                    <span class="meta" th:text="${d.transactionReference}">TXN-000000</span>
+                </td>
+                <td class="num">
+                    <span th:text="${#numbers.formatDecimal(d.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                    <span class="meta" th:text="${d.currency}">ZAR</span>
+                </td>
+                <td th:text="${d.reasonLabel}">Reason</td>
+                <td><span class="chip" th:classappend="'status-' + ${d.status.cssClass}"
+                          th:text="${d.status.label}">Submitted</span></td>
+                <td>
+                    <a class="button small" th:href="@{/admin/disputes/{id}(id=${d.id})}"
+                       th:text="${d.nextStatuses.empty} ? 'View' : 'Review'"
+                       th:attr="aria-label=(${d.nextStatuses.empty} ? 'View' : 'Review') + ' dispute for ' + ${d.transactionReference}">Review</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:replace="~{fragments/layout :: pager(${disputes}, ${pagerPath})}"></nav>
+</main>
+</body>
+</html>

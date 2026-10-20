@@ -1,0 +1,25 @@
+package com.example.disputeportal.repository;
+
+import com.example.disputeportal.entity.Customer;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+/**
+ * Database access for customers and admins (both are rows in the customers table, told apart by role).
+ *
+ * Spring Data generates the implementation: the SQL is derived from each method's name.
+ */
+public interface CustomerRepository extends JpaRepository<Customer, Long> {
+
+    /**
+     * Finds an account by login name. Used at sign-in and by the startup seeders.
+     */
+    Optional<Customer> findByUsername(String username);
+
+    /**
+     * Finds several accounts at once. Used by the loading API to resolve a whole batch with one query.
+     */
+    List<Customer> findByUsernameIn(Collection<String> usernames);
+}

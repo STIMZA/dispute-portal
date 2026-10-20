@@ -1,0 +1,71 @@
+<!--/*
+    Shared page pieces (Thymeleaf fragments). Other templates include them with
+    th:replace="~{fragments/layout :: name(args)}". Fragments in this file:
+    head(title), header(active), flash, timeline(events), pager(page, path).
+    Comments written like this one are removed by Thymeleaf and never reach the browser.
+*/-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!--/* head(title): the <head> shared by every page. The title argument becomes "<title> - Dispute Portal". */-->
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' - Dispute Portal'">Dispute Portal</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<!--/* header(active): top bar with the links for the signed-in user's role. 'active' names the current page so its link is highlighted. */-->
+<header class="site-header" th:fragment="header(active)">
+    <a class="brand" th:href="@{/}">Dispute Portal</a>
+    <nav aria-label="Main">
+        <!--/*
+            sec:authorize (Spring Security dialect) shows these links only to customers; admins get their own link below.
+            This only hides links. The server still enforces access (see SecurityConfig).
+        */-->
+        <th:block sec:authorize="hasRole('CUSTOMER')">
+            <a th:href="@{/transactions}" th:aria-current="${active == 'transactions'} ? 'page'">Transactions</a>
+            <a th:href="@{/disputes}" th:aria-current="${active == 'disputes'} ? 'page'">Dispute history</a>
+        </th:block>
+        <th:block sec:authorize="hasRole('ADMIN')">
+            <a th:href="@{/admin/disputes}" th:aria-current="${active == 'admin'} ? 'page'">Dispute queue</a>
+        </th:block>
+    </nav>
+    <!--/* Sign out is a POST form, not a link, so the CSRF token that th:action adds protects it. */-->
+    <form class="signout" th:action="@{/logout}" method="post">
+        <span class="who" sec:authentication="name">customer</span>
+        <button type="submit" class="link-button">Sign out</button>
+    </form>
+</header>
+
+<!--/* flash: one-off success/error messages that controllers pass through a redirect (flash attributes). Shown once, then gone. */-->
+<div th:fragment="flash">
+    <p class="notice notice-ok" role="status" th:if="${successMessage}" th:text="${successMessage}"></p>
+    <p class="notice notice-bad" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+</div>
+
+<!--/*
+    timeline(events): a dispute's progress, oldest first. th:text escapes everything, so notes typed by users
+    can't inject HTML.
+*/-->
+<ol class="timeline" th:fragment="timeline(events)">
+    <li th:each="e : ${events}">
+        <div class="timeline-head">
+            <span class="chip" th:classappend="'status-' + ${e.toStatus.cssClass}" th:text="${e.toStatus.label}">Status</span>
+            <span class="meta" th:text="${e.fromStatus == null} ? 'Dispute raised' : 'Status changed'">Event</span>
+        </div>
+        <p class="meta" th:text="${#temporals.format(e.createdAt, 'd MMM yyyy HH:mm')} + ' UTC, by ' + ${e.actor}">Date</p>
+        <p class="details" th:if="${e.note}" th:text="${e.note}">Note</p>
+    </li>
+</ol>
+
+<!--/*
+    pager(page, path): Previous/Next links for a Spring Data Page. 'path' is the URL to link to (it may already
+    contain ?status=...). Hidden when there is only one page.
+*/-->
+<nav class="pager" th:fragment="pager(page, path)" th:if="${page.totalPages > 1}" aria-label="Pagination">
+    <a th:if="${page.hasPrevious()}" th:href="@{${path}(page=${page.number - 1})}" rel="prev">Previous</a>
+    <span>Page <span th:text="${page.number + 1}">1</span> of <span th:text="${page.totalPages}">1</span></span>
+    <a th:if="${page.hasNext()}" th:href="@{${path}(page=${page.number + 1})}" rel="next">Next</a>
+</nav>
+</body>
+</html>

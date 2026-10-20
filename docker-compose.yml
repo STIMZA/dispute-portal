@@ -1,0 +1,48 @@
+# Local production-like stack: the app (prod profile) + PostgreSQL.
+# Usage: cp .env.example .env, edit the values, then: docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: disputes
+      POSTGRES_USER: disputes
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U disputes -d disputes"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # "demo" loads sample customers and disputes. Remove it for a real deployment.
+      SPRING_PROFILES_ACTIVE: prod,demo
+      DB_URL: jdbc:postgresql://db:5432/disputes
+      DB_USERNAME: disputes
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      APP_DEMO_PASSWORD: ${DEMO_PASSWORD:?Set DEMO_PASSWORD in .env}
+      # Optional real admin account (password must be 12+ characters). Leave ADMIN_PASSWORD empty to skip.
+      APP_ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Loading API: set LOADER_API_KEY (32+ characters, e.g. `openssl rand -base64 48`) to enable it.
+      APP_API_LOADER_KEY: ${LOADER_API_KEY:-}
+      # Customer-creation API: a different key, with its own permission. Leave empty to keep that API switched off.
+      APP_API_PROVISIONER_KEY: ${PROVISIONER_API_KEY:-}
+      # Plain HTTP on localhost; set to true (the default) when served over HTTPS.
+      APP_API_REQUIREHTTPS: ${API_REQUIRE_HTTPS:-false}
+      # Plain HTTP on localhost; leave at the default (true) when served over HTTPS.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    # Retry a few times (e.g. while the database warms up) but don't loop forever on a bad configuration.
+    restart: on-failure:5
+
+volumes:
+  db-data:

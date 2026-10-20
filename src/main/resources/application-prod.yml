@@ -1,0 +1,26 @@
+# Production settings. All secrets come from the environment, never from source control.
+spring:
+  # Database connection comes from environment variables (see docker-compose.yml and the README).
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+server:
+  servlet:
+    session:
+      cookie:
+        # Keep true behind HTTPS. Only set SESSION_COOKIE_SECURE=false for a plain-HTTP local trial.
+        secure: ${SESSION_COOKIE_SECURE:true}
+  # Trust X-Forwarded-* headers set by the reverse proxy, so the app knows the original scheme (https) and client address.
+  # Those are used for the HTTPS check and for login/API lockouts. Only run this way when the app is reachable only through your proxy.
+  forward-headers-strategy: framework
+
+logging:
+  level:
+    root: INFO
+
+app:
+  api:
+    # The API refuses plain-HTTP calls. Behind a TLS-terminating proxy it must send X-Forwarded-Proto.
+    require-https: ${API_REQUIRE_HTTPS:true}

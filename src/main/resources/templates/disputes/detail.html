@@ -1,0 +1,34 @@
+<!--/* One dispute in full. Model: 'detail' (DisputeDetail): the dispute summary, the customer's description and the progress timeline. */-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Dispute details')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('disputes')}"></header>
+<main>
+    <p><a th:href="@{/disputes}">Back to dispute history</a></p>
+    <h1>Dispute details</h1>
+
+    <!--/* Key facts as a description list (semantic markup that screen readers announce as term/value pairs). */-->
+    <dl class="summary">
+        <div><dt>Transaction</dt><dd><span th:text="${detail.dispute.merchant}">Merchant</span>
+            <span class="meta" th:text="${detail.dispute.transactionReference}">TXN-000000</span></dd></div>
+        <div><dt>Amount</dt>
+            <dd><span th:text="${#numbers.formatDecimal(detail.dispute.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                <span th:text="${detail.dispute.currency}">ZAR</span></dd></div>
+        <div><dt>Reason</dt><dd th:text="${detail.dispute.reasonLabel}">Reason</dd></div>
+        <div><dt>Status</dt><dd><span class="chip" th:classappend="'status-' + ${detail.dispute.status.cssClass}"
+                                      th:text="${detail.dispute.status.label}">Submitted</span></dd></div>
+    </dl>
+
+    <section class="card section">
+        <h2>What you told us</h2>
+        <p class="details" th:text="${detail.details}">Details</p>
+    </section>
+
+    <section class="card section">
+        <h2>Progress</h2>
+        <div th:replace="~{fragments/layout :: timeline(${detail.events})}"></div>
+    </section>
+</main>
+</body>
+</html>

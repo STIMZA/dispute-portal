@@ -1,0 +1,47 @@
+<!--/*
+    The customer's dispute history. Model: 'disputes' (a Page of DisputeRow). The progress timeline is on the details page,
+    reached from each card.
+*/-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Dispute history')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('disputes')}"></header>
+<main>
+    <h1>Dispute history</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="empty" th:if="${disputes.empty}">
+        <p>You haven't disputed any transactions.</p>
+        <a class="button" th:href="@{/transactions}">Find a transaction to dispute</a>
+    </div>
+
+    <div class="dispute-list" th:unless="${disputes.empty}">
+        <!--/* One card per dispute: transaction, amount, status, dates and the admin's outcome note if there is one. */-->
+        <article class="card dispute" th:each="d : ${disputes.content}">
+            <header class="dispute-head">
+                <div>
+                    <span class="merchant" th:text="${d.merchant}">Merchant</span>
+                    <span class="meta" th:text="${d.transactionReference} + ' - ' + ${d.reasonLabel}">TXN-000000 - Reason</span>
+                </div>
+                <div class="num">
+                    <span th:text="${#numbers.formatDecimal(d.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                    <span class="meta" th:text="${d.currency}">ZAR</span>
+                </div>
+                <span class="chip" th:classappend="'status-' + ${d.status.cssClass}"
+                      th:text="${d.status.label}">Submitted</span>
+            </header>
+            <p class="meta">
+                Raised <span th:text="${#temporals.format(d.createdAt, 'd MMM yyyy')}">1 Jan 2026</span>,
+                last update <span th:text="${#temporals.format(d.updatedAt, 'd MMM yyyy')}">1 Jan 2026</span>
+            </p>
+            <p class="details" th:if="${d.resolutionNote}" th:text="${d.resolutionNote}">Outcome note</p>
+            <p class="meta"><a th:href="@{/disputes/{id}(id=${d.id})}"
+                               th:attr="aria-label='View details of the dispute on ' + ${d.transactionReference}">View details</a></p>
+        </article>
+    </div>
+
+    <nav th:replace="~{fragments/layout :: pager(${disputes}, '/disputes')}"></nav>
+</main>
+</body>
+</html>

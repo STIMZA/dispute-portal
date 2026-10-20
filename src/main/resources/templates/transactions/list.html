@@ -1,0 +1,61 @@
+<!--/* The customer's transactions. Model: 'transactions' (a Page of TransactionRow) from TransactionController. */-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Transactions')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('transactions')}"></header>
+<main>
+    <h1>Your transactions</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <p class="empty" th:if="${transactions.empty}">No transactions to show yet.</p>
+
+    <!--/* table-wrap lets a wide table scroll sideways on small screens instead of breaking the page layout. */-->
+    <div class="table-wrap" th:unless="${transactions.empty}">
+        <table>
+            <caption class="visually-hidden">Transactions, newest first</caption>
+            <thead>
+            <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Merchant</th>
+                <th scope="col" class="num">Amount</th>
+                <th scope="col" class="num">Disputes logged</th>
+                <th scope="col" class="num">Disputes closed</th>
+                <th scope="col">Dispute</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!--/* One row per transaction. A coloured edge (has-open-dispute) marks rows with a dispute in progress. */-->
+            <tr th:each="t : ${transactions.content}" th:classappend="${t.disputeOpen} ? 'has-open-dispute'">
+                <td th:text="${#temporals.format(t.transactionDate, 'd MMM yyyy')}">1 Jan 2026</td>
+                <td>
+                    <span class="merchant" th:text="${t.merchant}">Merchant</span>
+                    <span class="meta" th:text="${t.reference}">TXN-000000</span>
+                </td>
+                <td class="num">
+                    <span th:text="${#numbers.formatDecimal(t.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                    <span class="meta" th:text="${t.currency}">ZAR</span>
+                </td>
+                <!--/* Disputes ever raised on this transaction, then how many of those are closed (resolved or not upheld). */-->
+                <td class="num" th:text="${t.disputesLogged}">0</td>
+                <td class="num" th:text="${t.disputesClosed}">0</td>
+                <td>
+                    <!--/*
+                        Action column: a Dispute button when allowed, a link to the history while a dispute is open, otherwise a short
+                        explanation (too old).
+                    */-->
+                    <a class="button small" th:if="${t.disputable}"
+                       th:href="@{/transactions/{id}/dispute(id=${t.id})}"
+                       th:attr="aria-label='Dispute ' + ${t.merchant} + ' ' + ${t.reference}">Dispute</a>
+                    <a class="chip status-open" th:if="${t.disputeOpen}" th:href="@{/disputes}">Dispute open</a>
+                    <span class="meta" th:if="${!t.disputable and !t.disputeOpen}">Too old to dispute</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:replace="~{fragments/layout :: pager(${transactions}, '/transactions')}"></nav>
+</main>
+</body>
+</html>

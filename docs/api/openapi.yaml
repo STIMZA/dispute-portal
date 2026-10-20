@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: Transactions Dispute Portal - Machine API
+  version: 1.0.0
+  description: |
+    Machine-to-machine API for loading transactions. Requests are authenticated with an API key sent as a
+    bearer token over HTTPS. A batch is atomic (all new transactions are saved, or none) and idempotent
+    (re-sending identical transactions is safe).
+
+    Each key is limited to one scope: `transactions:load` for the transactions endpoint and `customers:create`
+    for the customers endpoint. A key used on the other endpoint gets 403.
+servers:
+  - url: https://your-host
+paths:
+  /api/v1/transactions/batch:
+    post:
+      summary: Load a batch of transactions
+      operationId: loadTransactions
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadRequest'
+            example:
+              transactions:
+                - reference: CORE-2026-000123
+                  customerUsername: thandi
+                  merchant: Checkers Hyper
+                  description: Card purchase
+                  amount: 842.35
+                  currency: ZAR
+                  transactionDate: '2026-10-13T08:30:00Z'
+      responses:
+        '200':
+          description: Batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadResult'
+              example: {received: 1, created: 1, duplicates: 0}
+        '400':
+          description: Body missing or not valid JSON.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '401':
+          description: Missing, invalid, disabled or expired API key.
+          headers:
+            WWW-Authenticate: {schema: {type: string, example: Bearer}}
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '403':
+          description: HTTPS is required.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '409':
+          description: >
+            A reference already exists with different details (or a concurrent load clashed). Nothing was saved.
+            Retrying an unchanged batch after a concurrent clash is safe.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '413':
+          description: Request body larger than the limit (default 1 MiB).
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '415':
+          description: Content-Type is not application/json.
+        '422':
+          description: One or more items are invalid. Nothing was saved. Each problem names the offending field.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+              example:
+                title: Validation failed
+                status: 422
+                errors:
+                  - {path: 'transactions[0].amount', message: must be at least 0.01}
+        '429':
+          description: Too many failed authentication attempts from this address. Try again later.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+  /api/v1/customers/batch:
+    post:
+      summary: Create a batch of customer accounts
+      description: >
+        Needs a key with scope `customers:create`. Accounts are always ordinary customers. Atomic and idempotent:
+        re-sending an account that exists with the same name and password counts as a duplicate. Passwords are never
+        stored in plain text, logged or returned.
+      operationId: createCustomers
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerRequest'
+            example:
+              customers:
+                - username: thandi.nkosi
+                  fullName: Thandi Nkosi
+                  password: a-long-initial-password
+      responses:
+        '200':
+          description: Batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadResult'
+              example: {received: 1, created: 1, duplicates: 0}
+        '400':
+          description: Body missing or not valid JSON.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '401':
+          description: Missing, invalid, disabled or expired API key.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '403':
+          description: HTTPS is required, or the key does not have the customers:create scope.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '409':
+          description: A username already exists with different details (or belongs to an admin). Nothing was saved.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '413':
+          description: Request body larger than the limit (default 1 MiB).
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '422':
+          description: One or more items are invalid. Nothing was saved. Passwords are never echoed back.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '429':
+          description: Too many failed authentication attempts from this address.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key (32+ characters) in the Authorization header.
+  schemas:
+    LoadRequest:
+      type: object
+      required: [transactions]
+      properties:
+        transactions:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: {$ref: '#/components/schemas/Transaction'}
+    CustomerRequest:
+      type: object
+      required: [customers]
+      properties:
+        customers:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: {$ref: '#/components/schemas/Customer'}
+    Customer:
+      type: object
+      required: [username, fullName, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-z0-9._-]+$'
+        fullName: {type: string, maxLength: 100}
+        password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 72
+          description: Initial password; at most 72 bytes once encoded, and not equal to the username.
+    Transaction:
+      type: object
+      required: [reference, customerUsername, merchant, amount, currency, transactionDate]
+      properties:
+        reference:
+          type: string
+          maxLength: 30
+          pattern: '^[A-Za-z0-9._-]+$'
+          description: Your unique id for the transaction. Used to make loads idempotent.
+        customerUsername: {type: string, maxLength: 50, description: Must be an existing customer.}
+        merchant: {type: string, maxLength: 100}
+        description: {type: string, maxLength: 255}
+        amount:
+          type: number
+          minimum: 0.01
+          description: Up to 10 whole digits and 2 decimals.
+        currency: {type: string, pattern: '^[A-Z]{3}$', example: ZAR}
+        transactionDate:
+          type: string
+          format: date-time
+          description: ISO-8601 with a zone (use UTC, e.g. 2026-10-13T08:30:00Z). Not more than 5 minutes in the future.
+    LoadResult:
+      type: object
+      properties:
+        received: {type: integer}
+        created: {type: integer}
+        duplicates: {type: integer, description: Already present with identical details.}
+    Error:
+      type: object
+      properties:
+        title: {type: string}
+        status: {type: integer}
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path: {type: string, example: 'transactions[2].amount'}
+              message: {type: string}

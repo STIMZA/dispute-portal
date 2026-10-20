@@ -1,0 +1,21 @@
+spring:
+  # Reload templates on every request, so edits show without restarting.
+  thymeleaf:
+    cache: false
+
+app:
+  demo:
+    # Dev-only demo login password; override with the DEMO_PASSWORD environment variable.
+    password: ${DEMO_PASSWORD:change-me-dev}
+  api:
+    loader:
+      # Dev-only API key for the loading API; override with LOADER_API_KEY. Never use this value anywhere real.
+      key: ${LOADER_API_KEY:dev-only-loader-key-please-change-0123456789}
+    provisioner:
+      # Dev-only key for the customer-creation API; override with PROVISIONER_API_KEY. Never use it anywhere real.
+      key: ${PROVISIONER_API_KEY:dev-only-provisioner-key-change-me-0123456789}
+
+# More detailed logs for our own code while developing.
+logging:
+  level:
+    com.example.disputeportal: DEBUG
