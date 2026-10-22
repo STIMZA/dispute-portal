@@ -1,8 +1,5 @@
 package com.example.disputeportal.config;
 
-import com.example.disputeportal.entity.Customer;
-import com.example.disputeportal.entity.Role;
-import com.example.disputeportal.repository.CustomerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -11,9 +8,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.example.disputeportal.entity.Customer;
+import com.example.disputeportal.entity.Role;
+import com.example.disputeportal.repository.CustomerRepository;
+
 /**
- * Creates the first admin from configuration on startup. It never overwrites an existing account, so
- * changing APP_ADMIN_PASSWORD later does not reset the password of an admin that already exists.
+ * This will enable the application to create the first admin account on
+ * startup. Which you can use to log in and manage the disputes. You can
+ * manipulate the admin account by changing the username and password in the
+ * .env file. The password must be at least 12 characters long.
  */
 @Component
 public class AdminBootstrap implements CommandLineRunner {
@@ -32,8 +35,10 @@ public class AdminBootstrap implements CommandLineRunner {
     }
 
     /**
-     * Runs at startup. Creates the configured admin if there is one and it doesn't exist yet. Fails fast (the app
-     * refuses to start) when a password is set but too short, rather than creating a weak admin or silently ignoring it.
+     * Runs at startup. Creates the configured admin when enabled, and it
+     * doesn't exist yet. Fails fast (the app refuses to start) when a password
+     * is set but too short, rather than creating a weak admin or silently
+     * ignoring it.
      */
     @Override
     @Transactional
@@ -46,7 +51,6 @@ public class AdminBootstrap implements CommandLineRunner {
             throw new IllegalStateException("app.admin.username must not be blank");
         }
         if (properties.password().length() < MIN_PASSWORD_LENGTH) {
-            // Only the length is reported, never the password itself.
             throw new IllegalStateException("app.admin.password (APP_ADMIN_PASSWORD / ADMIN_PASSWORD) is set but is only "
                     + properties.password().length() + " characters; it must be at least " + MIN_PASSWORD_LENGTH
                     + ". Use a longer password, or remove the setting to skip creating an admin. "

@@ -18,11 +18,11 @@
             <dd><span th:text="${#numbers.formatDecimal(dispute.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
                 <span th:text="${dispute.currency}">ZAR</span></dd></div>
         <div><dt>Reason</dt><dd th:text="${dispute.reasonLabel}">Reason</dd></div>
-        <div><dt>Raised</dt><dd th:text="${#temporals.format(dispute.createdAt, 'd MMM yyyy HH:mm')} + ' UTC'">1 Jan 2026</dd></div>
+        <div><dt>Raised</dt><dd th:text="${#temporals.format(dispute.createdAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</dd></div>
         <div><dt>Status</dt><dd><span class="chip" th:classappend="'status-' + ${dispute.status.cssClass}"
                                       th:text="${dispute.status.label}">Submitted</span></dd></div>
         <div><dt>Last update</dt>
-            <dd><span th:text="${#temporals.format(dispute.updatedAt, 'd MMM yyyy HH:mm')} + ' UTC'">1 Jan 2026</span>
+            <dd><span th:text="${#temporals.format(dispute.updatedAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</span>
                 <span class="meta" th:if="${dispute.updatedBy}" th:text="'by ' + ${dispute.updatedBy}">by admin</span></dd></div>
     </dl>
 

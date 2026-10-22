@@ -53,7 +53,7 @@
             <span class="chip" th:classappend="'status-' + ${e.toStatus.cssClass}" th:text="${e.toStatus.label}">Status</span>
             <span class="meta" th:text="${e.fromStatus == null} ? 'Dispute raised' : 'Status changed'">Event</span>
         </div>
-        <p class="meta" th:text="${#temporals.format(e.createdAt, 'd MMM yyyy HH:mm')} + ' UTC, by ' + ${e.actor}">Date</p>
+        <p class="meta" th:text="${#temporals.format(e.createdAt, 'd MMM yyyy HH:mm')} + ' by ' + ${e.actor}">Date</p>
         <p class="details" th:if="${e.note}" th:text="${e.note}">Note</p>
     </li>
 </ol>

@@ -1,18 +1,20 @@
 package com.example.disputeportal.config;
 
-import com.example.disputeportal.security.ApiScopes;
-import com.example.disputeportal.service.ApiClientService;
 import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.example.disputeportal.security.ApiScopes;
+import com.example.disputeportal.service.ApiClientService;
+
 /**
- * Registers the API clients from configuration on startup: the loader (may load transactions) and the
- * provisioner (may create customers). The configured key is the source of truth: changing it rotates the
- * stored hash, and the old key stops working immediately.
+ * Creates the API clients using the configured keys. The loader key can be used
+ * for loading transactions, and the provisioner key can be used for creating
+ * customers.
  */
 @Component
 public class ApiKeyBootstrap implements CommandLineRunner {
@@ -28,16 +30,18 @@ public class ApiKeyBootstrap implements CommandLineRunner {
     }
 
     /**
-     * Runs at startup. For each client with a key configured, registers (or rotates) it. Fails fast when a key is
-     * set but too short, or when both clients were given the same key; a client with no key simply can't
-     * authenticate, so its endpoint is unusable.
+     * When the application starts up, this method is called. For each client
+     * with the key configured in the properties, it will register the client
+     * with the key and scope. It will throw an exception if a key is set but
+     * too short, or when both clients were given the same key. This will
+     * prevent clients without a key from accessing the API.
      */
     @Override
     public void run(String... args) {
         String loaderKey = properties.loader().key();
         String provisionerKey = properties.provisioner().key();
         if (StringUtils.hasText(loaderKey) && loaderKey.equals(provisionerKey)) {
-            // One key must never grant both permissions: that would defeat having separate scopes.
+            // To manage the scopes separately, the loader and provisioner keys must be different.
             throw new IllegalStateException("The loader and provisioner API keys must be different, "
                     + "because each key grants a different permission");
         }
@@ -53,7 +57,7 @@ public class ApiKeyBootstrap implements CommandLineRunner {
             return;
         }
         if (key.length() < ApiClientService.MIN_KEY_LENGTH) {
-            // Only the length is reported, never the key itself.
+            // Avoid logging the key itself, because it is a secret.
             throw new IllegalStateException(setting + " is set but is only " + key.length()
                     + " characters; it must be at least " + ApiClientService.MIN_KEY_LENGTH
                     + ". Generate one with: openssl rand -base64 48");

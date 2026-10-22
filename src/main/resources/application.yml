@@ -19,8 +19,8 @@ spring:
     properties:
       hibernate:
         jdbc:
-          # Read and write timestamps in UTC.
-          time_zone: UTC
+          # Read and write timestamps in GMT.
+          time_zone: GMT
   # Flyway applies the SQL files in db/migration at startup.
   flyway:
     enabled: true
