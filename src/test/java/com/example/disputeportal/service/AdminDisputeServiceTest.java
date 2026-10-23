@@ -20,6 +20,7 @@ import com.example.disputeportal.repository.DisputeRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.data.domain.PageRequest;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -106,5 +108,15 @@ class AdminDisputeServiceTest {
 
         assertThatThrownBy(() -> service.updateStatus(9L, DisputeStatus.UNDER_REVIEW, null, "agent1"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void queueRefusesAStartDateAfterTheEndDate() {
+        assertThatThrownBy(() -> service.list(null, LocalDate.of(2026, 10, 10), LocalDate.of(2026, 10, 1),
+                PageRequest.of(0, 15)))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("start date");
+        verify(disputeRepository, never()).findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(org.springframework.data.domain.Pageable.class));
     }
 }

@@ -1,21 +1,25 @@
 package com.example.disputeportal.security;
 
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-/** Caps how many bytes of the request body can be read, including chunked bodies with no declared length. */
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+
+/**
+ * This manages the size of the request body.
+ */
 public class LimitedBodyRequest extends HttpServletRequestWrapper {
 
     private final long maxBytes;
     /**
-     * Created on first use so every caller shares one stream (and one byte count).
+     * Created on first use so every caller shares one stream (and one byte
+     * count).
      */
     private ServletInputStream limitedStream;
 
@@ -25,7 +29,8 @@ public class LimitedBodyRequest extends HttpServletRequestWrapper {
     }
 
     /**
-     * Hands out the size-limited stream (created once, so repeated calls share the same byte count).
+     * Hands out the size-limited stream (created once, so repeated calls share
+     * the same byte count).
      */
     @Override
     public ServletInputStream getInputStream() throws IOException {
@@ -36,7 +41,8 @@ public class LimitedBodyRequest extends HttpServletRequestWrapper {
     }
 
     /**
-     * Reader view of the same limited stream, so reading as text is also capped.
+     * Reader view of the same limited stream, so reading as text is also
+     * capped.
      */
     @Override
     public BufferedReader getReader() throws IOException {
@@ -46,7 +52,8 @@ public class LimitedBodyRequest extends HttpServletRequestWrapper {
     }
 
     /**
-     * Wraps the real input stream and counts bytes as they are read, failing once the limit is exceeded.
+     * Wraps the real input stream and counts bytes as they are read, failing
+     * once the limit is exceeded.
      */
     private static final class LimitedStream extends ServletInputStream {
 
@@ -75,7 +82,8 @@ public class LimitedBodyRequest extends HttpServletRequestWrapper {
         }
 
         /**
-         * Reads a block of bytes and counts them; this is the method normally used to read a body.
+         * Reads a block of bytes and counts them; this is the method normally
+         * used to read a body.
          */
         @Override
         public int read(byte[] buffer, int offset, int length) throws IOException {
@@ -87,7 +95,8 @@ public class LimitedBodyRequest extends HttpServletRequestWrapper {
         }
 
         /**
-         * Counts n more bytes and fails with PayloadTooLargeException when the total passes the limit.
+         * Counts n more bytes and fails with PayloadTooLargeException when the
+         * total passes the limit.
          */
         private void add(int n) throws IOException {
             count += n;

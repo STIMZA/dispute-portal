@@ -1,13 +1,15 @@
 package com.example.disputeportal.dto;
 
 import com.example.disputeportal.entity.DisputeReason;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * The customer's dispute form. A plain class with getters and setters because Thymeleaf's th:field binds to
- * JavaBean properties. The validation messages are shown next to the fields.
+ * The customer's dispute form is a plain class with getters and setters because
+ * Thymeleaf's th:field binds to JavaBean properties. The validation messages
+ * are shown next to the fields.
  */
 public class DisputeForm {
 

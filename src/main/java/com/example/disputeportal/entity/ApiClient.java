@@ -1,11 +1,5 @@
 package com.example.disputeportal.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -13,7 +7,13 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-/** A machine client of the API. The key itself is never stored, only its SHA-256 hash. */
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 @Entity
 @Table(name = "api_clients")
 public class ApiClient {
@@ -26,13 +26,15 @@ public class ApiClient {
     private Long id;
 
     /**
-     * Human-readable client name, e.g. transaction-loader. Shown in logs. Unique.
+     * Human-readable client name, e.g. transaction-loader. Shown in logs.
+     * Unique.
      */
     @Column(nullable = false, unique = true, length = 50)
     private String name;
 
     /**
-     * SHA-256 of the API key, as 64 hex characters. The key itself is never stored, so a database leak doesn't expose usable keys.
+     * SHA-256 of the API key, as 64 hex characters. The key itself is never
+     * stored, so a database leak doesn't expose usable keys.
      */
     @Column(name = "key_hash", nullable = false, unique = true, length = 64)
     private String keyHash;
@@ -44,13 +46,14 @@ public class ApiClient {
     private boolean enabled;
 
     /**
-     * When the client was registered (UTC).
+     * When the client was registered.
      */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /**
-     * When the key was last used (UTC); updated at most every few minutes. Handy for spotting unused or stolen keys.
+     * When the key was last used, updated at most every few minutes. Handy for
+     * spotting unused or stolen keys.
      */
     @Column(name = "last_used_at")
     private LocalDateTime lastUsedAt;
@@ -62,8 +65,10 @@ public class ApiClient {
     private LocalDateTime expiresAt;
 
     /**
-     * What this client is allowed to do, as comma-separated scope names such as "transactions:load" (see
-     * {@link com.example.disputeportal.security.ApiScopes}). Each key gets only the scopes it needs.
+     * What this client is allowed to do, as comma-separated scope names such as
+     * "transactions:load" (see
+     * {@link com.example.disputeportal.security.ApiScopes}). Each key gets only
+     * the scopes it needs.
      */
     @Column(nullable = false, length = 200)
     private String scopes;
@@ -92,7 +97,10 @@ public class ApiClient {
         return enabled && (expiresAt == null || expiresAt.isAfter(now));
     }
 
-    /** Records use, at most once per interval, so a busy client doesn't cause a write per request. */
+    /**
+     * Records use, at most once per interval, so a busy client doesn't cause a
+     * write per request.
+     */
     public void markUsed(LocalDateTime now, Duration minInterval) {
         if (lastUsedAt == null || lastUsedAt.plus(minInterval).isBefore(now)) {
             lastUsedAt = now;
@@ -107,7 +115,8 @@ public class ApiClient {
     }
 
     /**
-     * Changes what the client may do (the configuration is the source of truth, so this follows it).
+     * Changes what the client may do (the configuration is the source of truth,
+     * so this follows it).
      */
     public void replaceScopes(String newScopes) {
         this.scopes = newScopes;

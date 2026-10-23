@@ -1,18 +1,22 @@
 package com.example.disputeportal.security;
 
-import com.example.disputeportal.config.LoginThrottleProperties;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.springframework.stereotype.Component;
 
+import com.example.disputeportal.config.LoginThrottleProperties;
+
 /**
- * Tracks failed logins per client address and username, and locks that pair out after too many failures.
+ * Tracks failed logins per client address and username, and locks that pair out
+ * after too many failures.
  *
- * <p>The state is held in memory, so it is per application instance and resets on restart. With several
- * instances, also rate-limit /login at the gateway or load balancer.
+ * The state is held in memory, so it is per application instance and resets on
+ * restart. With several instances, also rate-limit /login at the gateway or
+ * load balancer.
  */
 @Component
 public class LoginAttemptService {
@@ -20,13 +24,16 @@ public class LoginAttemptService {
     private static final int PRUNE_THRESHOLD = 10_000;
 
     /**
-     * What is remembered per client: failures in the current window, when the window started, and until when it is locked out.
+     * The application remembers failures in the current window, when the window
+     * started, and until when it is locked out.
      */
     private record State(int failures, Instant windowStart, Instant lockedUntil) {
+
     }
 
     /**
-     * Keyed by client address + username. A concurrent map because many requests run at the same time.
+     * Keyed by client address + username. A concurrent map because many
+     * requests run at the same time.
      */
     private final ConcurrentMap<String, State> attempts = new ConcurrentHashMap<>();
     private final LoginThrottleProperties properties;
@@ -37,7 +44,10 @@ public class LoginAttemptService {
         this.clock = clock;
     }
 
-    /** Key = client address + username. Usernames are sanitised so they are safe to log. */
+    /**
+     * Key = client address + username. Usernames are sanitised so they are safe
+     * to log.
+     */
     public static String key(String remoteAddress, String username) {
         String cleanUser = username == null ? "" : username.trim().toLowerCase();
         cleanUser = cleanUser.replaceAll("[^a-z0-9._@-]", "_");
@@ -55,7 +65,9 @@ public class LoginAttemptService {
         return state != null && state.lockedUntil() != null && state.lockedUntil().isAfter(clock.instant());
     }
 
-    /** @return true if this failure caused the client to be locked out */
+    /**
+     * @return true if this failure caused the client to be locked out
+     */
     public boolean recordFailure(String key) {
         Instant now = clock.instant();
         // compute() is atomic per key, so two simultaneous failures can't be lost.
@@ -77,7 +89,8 @@ public class LoginAttemptService {
     }
 
     /**
-     * Adds one failure, and starts a lockout once the allowed number is reached.
+     * Adds one failure, and starts a lockout once the allowed number is
+     * reached.
      */
     private State withFailure(State state, Instant now) {
         int failures = state.failures() + 1;
@@ -89,7 +102,8 @@ public class LoginAttemptService {
     }
 
     /**
-     * A locked-out entry expires when the lockout ends; otherwise it expires when its counting window has passed.
+     * A locked-out entry expires when the lockout ends; otherwise it expires
+     * when its counting window has passed.
      */
     private boolean isExpired(State state, Instant now) {
         if (state.lockedUntil() != null) {
@@ -99,7 +113,8 @@ public class LoginAttemptService {
     }
 
     /**
-     * Housekeeping: drops expired entries once the map gets large, so it can't grow without bound.
+     * Housekeeping: drops expired entries once the map gets large, so it can't
+     * grow without bound.
      */
     private void pruneIfLarge(Instant now) {
         if (attempts.size() > PRUNE_THRESHOLD) {

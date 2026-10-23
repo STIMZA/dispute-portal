@@ -10,8 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * A person who can sign in: either an ordinary customer (owns transactions and raises disputes) or an admin
- * (works the dispute queue). Both live in the customers table and are told apart by {@link Role}.
+ * This seeks to define users of the system, which are either ordinary customers
+ * or admins.
  */
 @Entity
 @Table(name = "customers")
@@ -31,7 +31,8 @@ public class Customer {
     private String username;
 
     /**
-     * BCrypt hash of the password. The plain password is never stored or logged.
+     * BCrypt hash of the password. The plain password is never stored or
+     * logged.
      */
     @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;

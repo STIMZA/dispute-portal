@@ -1,13 +1,7 @@
 package com.example.disputeportal.controller;
 
-import com.example.disputeportal.dto.DisputeForm;
-import com.example.disputeportal.dto.TransactionRow;
-import com.example.disputeportal.entity.DisputeReason;
-import com.example.disputeportal.exception.BusinessRuleException;
-import com.example.disputeportal.service.DisputeService;
-import com.example.disputeportal.service.TransactionService;
-import jakarta.validation.Valid;
 import java.security.Principal;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
@@ -20,10 +14,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.disputeportal.dto.DisputeForm;
+import com.example.disputeportal.dto.TransactionRow;
+import com.example.disputeportal.entity.DisputeReason;
+import com.example.disputeportal.exception.BusinessRuleException;
+import com.example.disputeportal.service.DisputeService;
+import com.example.disputeportal.service.TransactionService;
+
+import jakarta.validation.Valid;
+
 /**
- * Customer pages for disputes: the dispute form, the history list and the details page. URL access is limited to
- * ROLE_CUSTOMER by SecurityConfig. The signed-in username (from the Principal) is always passed down to the
- * services, which only ever return that customer's own data.
+ * Here we seek to return dispute-related pages to the customer. The dispute
+ * form is shown for one of their transactions, and they can submit it. While
+ * also being able to see their dispute history and the details of each dispute.
  */
 @Controller
 public class DisputeController {
@@ -42,8 +45,9 @@ public class DisputeController {
     }
 
     /**
-     * Shows the dispute form for one of the customer's transactions. If it can't be disputed right now (an open
-     * dispute, or too old) the customer is sent back to the list with a message instead.
+     * Shows the dispute form for one of the customer's transactions. If it
+     * can't be disputed right now (an open dispute, or too old) the customer is
+     * sent back to the list with a message instead.
      */
     @GetMapping("/transactions/{id}/dispute")
     public String showForm(@PathVariable Long id, Principal principal, Model model, RedirectAttributes redirect) {
@@ -58,12 +62,12 @@ public class DisputeController {
     }
 
     /**
-     * Submits the dispute form. On a validation or business-rule error the form is shown again with messages;
-     * on success the customer is redirected to their history.
+     * Submits the dispute form. on failure we redirect back to the history
+     * page.
      */
     @PostMapping("/transactions/{id}/dispute")
     public String submit(@PathVariable Long id, @Valid @ModelAttribute("form") DisputeForm form,
-                         BindingResult result, Principal principal, Model model, RedirectAttributes redirect) {
+            BindingResult result, Principal principal, Model model, RedirectAttributes redirect) {
         String username = principal.getName();
         // Bean Validation has already run (@Valid): a reason must be chosen and the text must be 10-1000 characters.
         if (!result.hasErrors()) {
@@ -83,7 +87,8 @@ public class DisputeController {
     }
 
     /**
-     * The customer's dispute history: one summary card per dispute, newest first, with a link to the details page.
+     * The customer's dispute history: one summary card per dispute, newest
+     * first, with a link to the details page.
      */
     @GetMapping("/disputes")
     public String history(@RequestParam(defaultValue = "0") int page, Principal principal, Model model) {
@@ -94,8 +99,9 @@ public class DisputeController {
     }
 
     /**
-     * One dispute with what the customer said and its full progress timeline. Someone else's dispute id gives a
-     * 404 (ResourceNotFoundException, handled by GlobalExceptionHandler).
+     * One dispute with what the customer said and its full progress timeline.
+     * Someone else's dispute ID gives a 404 (ResourceNotFoundException, handled
+     * by GlobalExceptionHandler).
      */
     @GetMapping("/disputes/{id}")
     public String detail(@PathVariable Long id, Principal principal, Model model) {
@@ -104,8 +110,8 @@ public class DisputeController {
     }
 
     /**
-     * Adds what the form page needs: the transaction summary, earlier disputes on it, and the reason options
-     * for the dropdown.
+     * Adds what the form page needs: the transaction summary, earlier disputes
+     * on it, and the reason options for the dropdown.
      */
     private void populateFormPage(Model model, TransactionRow transaction, String username) {
         model.addAttribute("transaction", transaction);

@@ -1,7 +1,5 @@
 package com.example.disputeportal.service;
 
-import com.example.disputeportal.entity.ApiClient;
-import com.example.disputeportal.repository.ApiClientRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -12,14 +10,19 @@ import java.util.HexFormat;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.disputeportal.entity.ApiClient;
+import com.example.disputeportal.repository.ApiClientRepository;
+
 /**
- * Looks up API clients by the SHA-256 hash of their key. A fast hash is appropriate here because API keys
- * are long random values (not human-chosen passwords), and the lookup is by hash so no secret is compared.
+ * Looks up API clients by the SHA-256 hash of their key. A fast hash is
+ * appropriate here because API keys are long random values (not human-chosen
+ * passwords), and the lookup is by hash so no secret is compared.
  */
 @Service
 public class ApiClientService {
@@ -41,7 +44,8 @@ public class ApiClientService {
     /**
      * Checks a presented API key.
      *
-     * @return the client (name and permitted scopes) if the key belongs to an enabled, unexpired client
+     * @return the client (name and permitted scopes) if the key belongs to an
+     * enabled, unexpired client
      */
     @Transactional
     public Optional<AuthenticatedClient> authenticate(String presentedKey) {
@@ -58,12 +62,10 @@ public class ApiClientService {
     }
 
     /**
-     * Called at startup with the configured key. The configuration is the source of truth:
-     * <ul>
-     *   <li>a new client is created;</li>
-     *   <li>a different key rotates the stored hash (the old key stops working at once);</li>
-     *   <li>different scopes replace the stored scopes.</li>
-     * </ul>
+     * Called at startup with the configured key. The configuration is the
+     * source of truth: - a new client is created. - a different key rotates the
+     * stored hash (the old key stops working at once). - different scopes
+     * replace the stored scopes.
      *
      * @param scopes what this key may do, e.g. {"transactions:load"}
      */
@@ -89,8 +91,9 @@ public class ApiClientService {
     }
 
     /**
-     * SHA-256 of the key as lowercase hex (64 characters). The same function is used to store a key and to look one up,
-     * so the plain key never needs to be stored.
+     * SHA-256 of the key as lowercase hex (64 characters). The same function is
+     * used to store a key and to look one up, so the plain key never needs to
+     * be stored.
      */
     public static String hash(String key) {
         try {

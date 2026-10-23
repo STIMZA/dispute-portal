@@ -1,11 +1,13 @@
 package com.example.disputeportal.dto;
 
-import com.example.disputeportal.entity.DisputeStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.example.disputeportal.entity.DisputeStatus;
+
 /**
- * A dispute as the customer pages need it: the dispute together with the key details of its transaction.
+ * This is the structure used for the customer to view the dispute together with
+ * the key details of its transaction.
  */
 public record DisputeRow(
         Long id,
@@ -18,4 +20,5 @@ public record DisputeRow(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         String resolutionNote) {
+
 }

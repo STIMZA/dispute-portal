@@ -1,10 +1,7 @@
 package com.example.disputeportal.controller;
 
-import com.example.disputeportal.dto.ApiError;
-import com.example.disputeportal.dto.ApiProblem;
-import com.example.disputeportal.exception.BatchRejectedException;
-import com.example.disputeportal.security.PayloadTooLargeException;
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,9 +12,17 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.example.disputeportal.dto.ApiError;
+import com.example.disputeportal.dto.ApiProblem;
+import com.example.disputeportal.exception.BatchRejectedException;
+import com.example.disputeportal.security.PayloadTooLargeException;
+
 /**
- * Turns API failures into the standard JSON error body. Limited to the two API controllers so it never
- * affects the HTML pages. Messages are fixed text: nothing from the request body is echoed back.
+ * Here we will manage exceptions thrown specifically by the two API
+ * controllers, and return a JSON error response with a suitable HTTP status
+ * code (TransactionLoadController and CustomerProvisionController). The error
+ * response will include a title, status code, and a list of problems (field
+ * name and message) if applicable.
  */
 @RestControllerAdvice(assignableTypes = {TransactionLoadController.class, CustomerProvisionController.class})
 public class ApiExceptionHandler {
@@ -25,7 +30,8 @@ public class ApiExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     /**
-     * Bean Validation failed on the request body: 422, with one problem per invalid field.
+     * Bean Validation failed on the request body: 422, with one problem per
+     * invalid field.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
@@ -36,7 +42,8 @@ public class ApiExceptionHandler {
     }
 
     /**
-     * The load service rejected the whole batch (422 for invalid items, 409 for conflicts). Nothing was saved.
+     * The load service rejected the whole batch (422 for invalid items, 409 for
+     * conflicts). Nothing was saved.
      */
     @ExceptionHandler(BatchRejectedException.class)
     public ResponseEntity<ApiError> handleLoad(BatchRejectedException ex) {
@@ -44,8 +51,9 @@ public class ApiExceptionHandler {
     }
 
     /**
-     * The body couldn't be read: malformed JSON (400), or it exceeded the size limit while being read (413, signalled by
-     * the PayloadTooLargeException thrown from LimitedBodyRequest).
+     * The body couldn't be read: malformed JSON (400), or it exceeded the size
+     * limit while being read (413, signalled by the PayloadTooLargeException
+     * thrown from LimitedBodyRequest).
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex) {
@@ -58,7 +66,8 @@ public class ApiExceptionHandler {
     }
 
     /**
-     * The database refused the insert, typically a unique-reference clash with a concurrent load.
+     * The database refused the insert, typically a unique-reference clash with
+     * a concurrent load.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleIntegrity(DataIntegrityViolationException ex) {

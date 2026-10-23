@@ -1,4 +1,4 @@
-<!--/* Admin dispute queue. Model: disputes (Page of AdminDisputeRow), statusFilter, statuses, pagerPath. Admin role only. */-->
+<!--/* Admin dispute queue. Model: disputes (Page of AdminDisputeRow), statusFilter, fromFilter, toFilter, statuses, pagerPath. Admin role only. */-->
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Dispute queue')}"></head>
@@ -8,16 +8,33 @@
     <h1>Dispute queue</h1>
     <div th:replace="~{fragments/layout :: flash}"></div>
 
-    <!--/* Status filter links. aria-current marks the active one; each reloads the queue with ?status=... */-->
+    <!--/* Status filter links. aria-current marks the active one; each reloads the queue with ?status=... and keeps the date range. */-->
     <nav class="filters" aria-label="Filter by status">
-        <a th:href="@{/admin/disputes}" th:classappend="${statusFilter == null} ? 'active'"
+        <a th:href="@{/admin/disputes(from=${fromFilter},to=${toFilter})}" th:classappend="${statusFilter == null} ? 'active'"
            th:aria-current="${statusFilter == null} ? 'page'">All</a>
-        <a th:each="s : ${statuses}" th:href="@{/admin/disputes(status=${s})}" th:text="${s.label}"
+        <a th:each="s : ${statuses}" th:href="@{/admin/disputes(status=${s},from=${fromFilter},to=${toFilter})}" th:text="${s.label}"
            th:classappend="${statusFilter == s} ? 'active'"
            th:aria-current="${statusFilter == s} ? 'page'">Status</a>
     </nav>
 
-    <p class="empty" th:if="${disputes.empty}">No disputes match this filter.</p>
+    <!--/* Date range filter (by the day the dispute was raised, both ends inclusive, both optional). A plain GET form, so the
+           range is in the URL; the hidden field keeps the chosen status. */-->
+    <form class="date-filter" th:action="@{/admin/disputes}" method="get" aria-label="Filter by date raised">
+        <input type="hidden" name="status" th:if="${statusFilter != null}" th:value="${statusFilter}">
+        <div>
+            <label for="from">Raised from</label>
+            <input type="date" id="from" name="from" th:value="${fromFilter}">
+        </div>
+        <div>
+            <label for="to">Raised to</label>
+            <input type="date" id="to" name="to" th:value="${toFilter}">
+        </div>
+        <button type="submit" class="button small">Apply</button>
+        <a class="button small secondary" th:if="${fromFilter != null or toFilter != null}"
+           th:href="@{/admin/disputes(status=${statusFilter})}">Clear dates</a>
+    </form>
+
+    <p class="empty" th:if="${disputes.empty}">No disputes match these filters.</p>
 
     <div class="table-wrap" th:unless="${disputes.empty}">
         <table>

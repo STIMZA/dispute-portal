@@ -1,12 +1,14 @@
 package com.example.disputeportal.security;
 
 import java.util.Collection;
+
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
- * An authenticated API client. Its authorities are its scopes, each prefixed with "SCOPE_" (for example
- * SCOPE_transactions:load), which the access rules in SecurityConfig and the @PreAuthorize checks look for.
+ * An authenticated API clients authorities are its scopes, each prefixed with
+ * "SCOPE_" (for example SCOPE_transactions:load), which the access rules in
+ * SecurityConfig and the @PreAuthorize checks look for.
  */
 public class ApiKeyAuthentication extends AbstractAuthenticationToken {
 
@@ -14,7 +16,7 @@ public class ApiKeyAuthentication extends AbstractAuthenticationToken {
 
     /**
      * @param clientName the name of the API client whose key was verified
-     * @param scopes     what that client is allowed to do (see {@link ApiScopes})
+     * @param scopes what that client is allowed to do (see {@link ApiScopes})
      */
     public ApiKeyAuthentication(String clientName, Collection<String> scopes) {
         super(scopes.stream().map(scope -> new SimpleGrantedAuthority(ApiScopes.authority(scope))).toList());
@@ -24,7 +26,8 @@ public class ApiKeyAuthentication extends AbstractAuthenticationToken {
     }
 
     /**
-     * No credentials are kept; the key is discarded as soon as it has been checked.
+     * No credentials are kept; the key is discarded as soon as it has been
+     * checked.
      */
     @Override
     public Object getCredentials() {
@@ -32,7 +35,8 @@ public class ApiKeyAuthentication extends AbstractAuthenticationToken {
     }
 
     /**
-     * The principal is simply the client's name (shown in logs and passed to the services).
+     * The principal is simply the client's name (shown in logs and passed to
+     * the services).
      */
     @Override
     public Object getPrincipal() {

@@ -1,14 +1,8 @@
 package com.example.disputeportal.security;
 
-import com.example.disputeportal.config.ApiProperties;
-import com.example.disputeportal.service.ApiClientService;
-import com.example.disputeportal.service.AuthenticatedClient;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -16,12 +10,23 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.example.disputeportal.config.ApiProperties;
+import com.example.disputeportal.service.ApiClientService;
+import com.example.disputeportal.service.AuthenticatedClient;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 /**
- * Authenticates API calls with "Authorization: Bearer &lt;key&gt;". Not a Spring bean: it is added to the API
- * security chain only, so it doesn't also run for the web pages.
+ * Authenticates API calls with "Authorization: Bearer &lt;key&gt;". Not a
+ * Spring bean: it is added to the API security chain only, so it doesn't also
+ * run for the web pages.
  *
- * <p>Order of checks: HTTPS, repeated-failure lockout, key, declared body size. Nothing is learned by an
- * unauthenticated caller other than "authentication required".
+ * Order of checks: HTTPS, repeated-failure lockout, key, declared body size.
+ * Nothing is learned by an unauthenticated caller other than "authentication
+ * required".
  */
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
@@ -34,7 +39,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     private final ApiErrorWriter errors;
 
     public ApiKeyAuthenticationFilter(ApiClientService apiClients, LoginAttemptService attempts,
-                                      ApiProperties properties, ApiErrorWriter errors) {
+            ApiProperties properties, ApiErrorWriter errors) {
         this.apiClients = apiClients;
         this.attempts = attempts;
         this.properties = properties;
@@ -42,7 +47,8 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Runs for every /api/** request, before authorization. Each step below either rejects the request or lets it continue.
+     * Runs for every /api/** request, before authorization. Each step below
+     * either rejects the request or lets it continue.
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -101,7 +107,8 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 401 with the standard JSON body and a WWW-Authenticate header telling the client to send a Bearer token.
+     * 401 with the standard JSON body and a WWW-Authenticate header telling the
+     * client to send a Bearer token.
      */
     private void unauthorized(HttpServletResponse response) throws IOException {
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");

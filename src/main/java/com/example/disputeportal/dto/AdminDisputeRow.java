@@ -1,15 +1,15 @@
 package com.example.disputeportal.dto;
 
-import com.example.disputeportal.entity.DisputeStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.disputeportal.entity.DisputeStatus;
+
 /**
- * A dispute as the admin pages need it, including the customer. Built by AdminDisputeService so templates never
- * touch lazily-loaded entities.
- *
- * nextStatuses lists the statuses the dispute may move to (empty when it is closed).
+ * This is a represantation of a dispute for the admin's review page.
+ * nextStatuses lists the statuses the dispute may move to (empty when it is
+ * closed).
  */
 public record AdminDisputeRow(
         Long id,
@@ -27,4 +27,5 @@ public record AdminDisputeRow(
         String updatedBy,
         String resolutionNote,
         List<DisputeStatus> nextStatuses) {
+
 }

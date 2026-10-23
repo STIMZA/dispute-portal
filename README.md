@@ -149,7 +149,7 @@ Never commit real secrets. `.env` is git-ignored and `.env.example` documents th
 | Dispute form | `/transactions/{id}/dispute` | Validated server-side; Post/Redirect/Get on success; lists earlier disputes on the same transaction |
 | Dispute history | `/disputes` | Every dispute ever raised, a summary card per dispute (status, reason, dates, outcome note) linking to its details |
 | Dispute details | `/disputes/{id}` | The customer's own dispute with its full progress timeline |
-| Dispute queue (admin) | `/admin/disputes` | All customers' disputes, filterable by status |
+| Dispute queue (admin) | `/admin/disputes` | All customers' disputes, filterable by status and by the date raised (`?status=`, `?from=`, `?to=`, as `yyyy-MM-dd`) |
 | Review dispute (admin) | `/admin/disputes/{id}` | See the details and full history, move the dispute along, write a note to the customer |
 
 Rules enforced in `DisputeService`:

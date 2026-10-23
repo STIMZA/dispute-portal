@@ -5,13 +5,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- * Login page and the landing redirect after sign-in.
+ * Login page redirect after sign-in.
  */
 @Controller
 public class LoginController {
 
     /**
-     * Shows the sign-in form. The POST is handled by Spring Security's form login (see SecurityConfig), not here.
+     * Shows the sign-in form. The POST is handled by Spring Security's form
+     * login (see SecurityConfig).
      */
     @GetMapping("/login")
     public String login() {
@@ -19,7 +20,8 @@ public class LoginController {
     }
 
     /**
-     * The site root sends each user to their own start page: admins to the dispute queue, customers to their transactions.
+     * The site root sends each user to their own start page: admins to the
+     * dispute queue, customers to their transactions.
      */
     @GetMapping("/")
     public String home(Authentication authentication) {

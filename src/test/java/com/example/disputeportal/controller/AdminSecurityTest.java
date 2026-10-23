@@ -82,6 +82,32 @@ class AdminSecurityTest {
 
     @Test
     @WithMockUser(username = "demo-admin", roles = "ADMIN")
+    void adminCanFilterTheQueueByDateRange() throws Exception {
+        mvc.perform(get("/admin/disputes").param("from", "2000-01-01").param("to", "2100-01-01"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("pagerPath", "/admin/disputes?from=2000-01-01&to=2100-01-01"));
+        // A range far in the past matches nothing.
+        mvc.perform(get("/admin/disputes").param("from", "1999-01-01").param("to", "1999-12-31"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("disputes", org.hamcrest.Matchers.hasProperty("empty", org.hamcrest.Matchers.is(true))));
+        // The status filter and the dates combine, and the pager keeps both.
+        mvc.perform(get("/admin/disputes").param("status", "SUBMITTED").param("from", "2000-01-01"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("pagerPath", "/admin/disputes?status=SUBMITTED&from=2000-01-01"));
+    }
+
+    @Test
+    @WithMockUser(username = "demo-admin", roles = "ADMIN")
+    void queueRejectsBadDatesAndBackwardsRanges() throws Exception {
+        mvc.perform(get("/admin/disputes").param("from", "not-a-date")).andExpect(status().isBadRequest());
+        mvc.perform(get("/admin/disputes").param("from", "2026-10-10").param("to", "2026-10-01"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("errorMessage"))
+                .andExpect(model().attribute("disputes", org.hamcrest.Matchers.hasProperty("empty", org.hamcrest.Matchers.is(true))));
+    }
+
+    @Test
+    @WithMockUser(username = "demo-admin", roles = "ADMIN")
     void adminSeesDisputeDetailOr404() throws Exception {
         mvc.perform(get("/admin/disputes/1"))
                 .andExpect(status().isOk())

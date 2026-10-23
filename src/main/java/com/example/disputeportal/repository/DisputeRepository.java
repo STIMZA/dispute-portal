@@ -11,7 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.repository.query.Param;
 
 /**
@@ -19,7 +21,7 @@ import org.springframework.data.repository.query.Param;
  * because they need grouping or a projection. {@code @EntityGraph} loads related rows in the same query, which avoids
  * one extra query per row (the "N+1" problem) on list pages.
  */
-public interface DisputeRepository extends JpaRepository<Dispute, Long> {
+public interface DisputeRepository extends JpaRepository<Dispute, Long>, JpaSpecificationExecutor<Dispute> {
 
     /**
      * Does the transaction have a dispute in any of these statuses? Used to enforce one open dispute at a time.
@@ -42,10 +44,12 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
     Page<Dispute> findAll(Pageable pageable);
 
     /**
-     * Disputes in one status, for the admin queue filter.
+     * Disputes matching a filter built from optional criteria (status, date range), for the admin queue. Overridden
+     * here only to attach the entity graph, so the page still loads transaction and customer in one query.
      */
+    @Override
     @EntityGraph(attributePaths = {"transaction", "transaction.customer"})
-    Page<Dispute> findByStatus(DisputeStatus status, Pageable pageable);
+    Page<Dispute> findAll(Specification<Dispute> spec, Pageable pageable);
 
     /** Locks the dispute so two admins can't decide the same dispute at once. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

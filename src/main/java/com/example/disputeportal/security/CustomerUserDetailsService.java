@@ -1,14 +1,16 @@
 package com.example.disputeportal.security;
 
-import com.example.disputeportal.repository.CustomerRepository;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.example.disputeportal.repository.CustomerRepository;
+
 /**
- * Tells Spring Security how to find an account at login: by username, returning the stored password hash and role.
+ * Tells Spring Security how to find an account at login: by username, returning
+ * the stored password hash and role.
  */
 @Service
 public class CustomerUserDetailsService implements UserDetailsService {
@@ -20,8 +22,9 @@ public class CustomerUserDetailsService implements UserDetailsService {
     }
 
     /**
-     * Called by Spring Security during form login. Spring itself compares the typed password with the returned hash.
-     * An unknown username raises the same generic exception as a wrong password, so the login page can't be used to
+     * Called by Spring Security during login. Spring compares the typed
+     * password with the returned hash. An unknown username raises the same
+     * exception as a wrong password, so the login page can't be used to
      * discover which usernames exist.
      */
     @Override

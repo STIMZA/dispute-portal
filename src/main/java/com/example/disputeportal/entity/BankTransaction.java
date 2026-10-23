@@ -1,5 +1,8 @@
 package com.example.disputeportal.entity;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,10 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-/** A card/account transaction. Timestamps are stored in UTC. */
 // The entity is named explicitly: a bare "Transaction" is easily confused with transaction APIs and query keywords.
 @Entity(name = "BankTransaction")
 @Table(name = "transactions")
@@ -26,15 +26,16 @@ public class BankTransaction {
     private Long id;
 
     /**
-     * The owner. LAZY: the customer row is only loaded if something actually asks for it.
+     * The owner. LAZY: the customer row is only loaded if something actually
+     * asks for it.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
     /**
-     * The id of this transaction in the system it came from. Unique, which is what lets the loading API be retried
-     * safely without creating duplicates.
+     * The id of this transaction in the system it came from. Unique, which is
+     * what lets the loading API be retried safely without creating duplicates.
      */
     @Column(nullable = false, unique = true, length = 30)
     private String reference;
@@ -52,7 +53,8 @@ public class BankTransaction {
     private String description;
 
     /**
-     * Amount with exactly two decimals. BigDecimal (never double) is used for money to avoid rounding errors.
+     * Amount with exactly two decimals. BigDecimal (never double) is used for
+     * money to avoid rounding errors.
      */
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
@@ -64,7 +66,7 @@ public class BankTransaction {
     private String currency;
 
     /**
-     * When the transaction happened, in UTC.
+     * When the transaction happened.
      */
     @Column(name = "transaction_date", nullable = false)
     private LocalDateTime transactionDate;
@@ -74,10 +76,11 @@ public class BankTransaction {
     }
 
     /**
-     * Creates a transaction. In practice these come from the loading API (or the demo seeder).
+     * Creates a transaction. In practice these come from the loading API (or
+     * the demo seeder).
      */
     public BankTransaction(Customer customer, String reference, String merchant, String description,
-                           BigDecimal amount, String currency, LocalDateTime transactionDate) {
+            BigDecimal amount, String currency, LocalDateTime transactionDate) {
         this.customer = customer;
         this.reference = reference;
         this.merchant = merchant;
