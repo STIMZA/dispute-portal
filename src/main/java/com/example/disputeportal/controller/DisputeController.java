@@ -1,6 +1,7 @@
 package com.example.disputeportal.controller;
 
 import java.security.Principal;
+import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -14,11 +15,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.disputeportal.dto.DisputeDetail;
 import com.example.disputeportal.dto.DisputeForm;
+import com.example.disputeportal.dto.EvidenceLimits;
+import com.example.disputeportal.dto.EvidenceRow;
 import com.example.disputeportal.dto.TransactionRow;
 import com.example.disputeportal.entity.DisputeReason;
 import com.example.disputeportal.exception.BusinessRuleException;
 import com.example.disputeportal.service.DisputeService;
+import com.example.disputeportal.service.EvidenceService;
 import com.example.disputeportal.service.TransactionService;
 
 import jakarta.validation.Valid;
@@ -38,10 +43,13 @@ public class DisputeController {
 
     private final DisputeService disputeService;
     private final TransactionService transactionService;
+    private final EvidenceService evidenceService;
 
-    public DisputeController(DisputeService disputeService, TransactionService transactionService) {
+    public DisputeController(DisputeService disputeService, TransactionService transactionService,
+            EvidenceService evidenceService) {
         this.disputeService = disputeService;
         this.transactionService = transactionService;
+        this.evidenceService = evidenceService;
     }
 
     /**
@@ -99,13 +107,21 @@ public class DisputeController {
     }
 
     /**
-     * One dispute with what the customer said and its full progress timeline.
-     * Someone else's dispute ID gives a 404 (ResourceNotFoundException, handled
-     * by GlobalExceptionHandler).
+     * One dispute with what the customer said, its full progress timeline and
+     * the evidence uploaded so far. The upload form is offered only while the
+     * dispute is open and has room for more files. Someone else's dispute ID
+     * gives a 404 (ResourceNotFoundException, handled by
+     * GlobalExceptionHandler).
      */
     @GetMapping("/disputes/{id}")
     public String detail(@PathVariable Long id, Principal principal, Model model) {
-        model.addAttribute("detail", disputeService.getDetail(id, principal.getName()));
+        DisputeDetail detail = disputeService.getDetail(id, principal.getName());
+        List<EvidenceRow> evidence = evidenceService.listForCustomer(id, principal.getName());
+        EvidenceLimits limits = evidenceService.limits();
+        model.addAttribute("detail", detail);
+        model.addAttribute("evidence", evidence);
+        model.addAttribute("limits", limits);
+        model.addAttribute("canUpload", detail.dispute().status().isOpen() && evidence.size() < limits.maxFiles());
         return "disputes/detail";
     }
 

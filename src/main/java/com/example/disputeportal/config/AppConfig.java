@@ -12,11 +12,12 @@ import org.springframework.context.annotation.Configuration;
 public class AppConfig {
 
     /**
-     * All timestamps are created and stored in the system's default time zone.
+     * All timestamps are created and stored in UTC, whatever the server's own
+     * time zone is. Pages convert them to SAST for display (see DisplayTime).
      * Tests can replace this with a fixed clock.
      */
     @Bean
     public Clock clock() {
-        return Clock.systemDefaultZone();
+        return Clock.systemUTC();
     }
 }

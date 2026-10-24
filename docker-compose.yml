@@ -41,8 +41,12 @@ services:
       APP_API_REQUIREHTTPS: ${API_REQUIRE_HTTPS:-false}
       # Plain HTTP on localhost; leave at the default (true) when served over HTTPS.
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    volumes:
+      # Uploaded dispute evidence. Back this up together with the database.
+      - evidence-data:/data/evidence
     # Retry a few times (e.g. while the database warms up) but don't loop forever on a bad configuration.
     restart: on-failure:5
 
 volumes:
   db-data:
+  evidence-data:

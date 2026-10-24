@@ -60,24 +60,28 @@ public class DisputeService {
     private final DisputeEventRepository eventRepository;
     private final DisputeProperties properties;
     private final Clock clock;
+    private final NotificationService notificationService;
 
     /**
      * Spring supplies these collaborators through the constructor (no field injection), which also makes the class
      * easy to unit test with mocks and a fixed clock.
      */
     public DisputeService(BankTransactionRepository transactionRepository, DisputeRepository disputeRepository,
-                          DisputeEventRepository eventRepository, DisputeProperties properties, Clock clock) {
+                          DisputeEventRepository eventRepository, DisputeProperties properties, Clock clock,
+                          NotificationService notificationService) {
         this.transactionRepository = transactionRepository;
         this.disputeRepository = disputeRepository;
         this.eventRepository = eventRepository;
         this.properties = properties;
         this.clock = clock;
+        this.notificationService = notificationService;
     }
 
     /**
      * Raises a new dispute against one of the customer's transactions.
      *
-     * Runs in one database transaction: the dispute and its first history entry are saved together or not at all.
+     * Runs in one database transaction: the dispute, its first history entry and the admins' notification are saved
+     * together or not at all.
      *
      * @param transactionId id of the transaction being disputed
      * @param username      the signed-in customer, who must own the transaction
@@ -108,6 +112,8 @@ public class DisputeService {
         LocalDateTime now = LocalDateTime.now(clock);
         Dispute dispute = disputeRepository.save(new Dispute(transaction, reason, details.trim(), username, now));
         eventRepository.save(new DisputeEvent(dispute, null, DisputeStatus.SUBMITTED, null, username, now));
+        // Same database transaction as the dispute: the admins' notification exists only if the dispute was saved.
+        notificationService.disputeRaised(dispute);
         log.info("Dispute {} raised for transaction {}", dispute.getId(), transaction.getReference());
         return dispute;
     }

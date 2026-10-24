@@ -117,6 +117,8 @@ mvn verify      # the full build, as CI runs it
 | `CustomerProvisioningServiceTest` | Atomic account creation, hashed passwords, idempotent replays, conflicts, admins untouched, password rules (72 bytes, not the username) |
 | `CustomerProvisionApiTest` (MockMvc) | The customer API end to end: scope separation between the two keys (403), accounts can log in and are always customers, no password in any response |
 | `AdminSecurityTest` (MockMvc) | Admin pages need the admin role, customers get 403 (including calling the service directly), admins are kept out of customer pages, deciding a dispute works and invalid decisions are refused |
+| `EvidenceServiceTest`, `NotificationServiceTest` (Mockito) | Evidence rules (ownership, open disputes only, size and count limits, real file type vs name, duplicates, file-name cleaning) and who is notified about what |
+| `EvidenceAndNotificationFlowTest` (MockMvc) | Upload, listing and attachment download, CSRF, customer/admin separation, closed disputes, the notifications inbox and mark-as-read |
 | `WebSecurityTest` (MockMvc) | Anonymous redirect to login, public health probe, customer pages render, 404 for unknown ids, CSRF enforcement, form validation errors |
 
 The MVC tests start the full application against in-memory H2 with the demo data, so no external services are needed.
@@ -136,6 +138,9 @@ The MVC tests start the full application against in-memory H2 with the demo data
 | `APP_ADMIN_USERNAME`, `APP_ADMIN_PASSWORD` | env | `admin` / empty | Creates an admin on startup if the password is set (12+ characters) |
 | `SESSION_COOKIE_SECURE` | env (prod) | `true` | Set `false` only for plain-HTTP local trials |
 | `app.dispute.window-days` | `application.yml` | `120` | How long after a transaction it can be disputed |
+| `EVIDENCE_DIR` (`app.evidence.storage-dir`) | env | `/data/evidence` in prod, the temp folder otherwise | Where uploaded evidence is written. In Docker this is a volume; back it up with the database |
+| `app.evidence.max-file-bytes` | `application.yml` or env `APP_EVIDENCE_MAXFILEBYTES` | `5242880` (5 MB) | Largest accepted evidence file. The web server's upload limit follows it |
+| `app.evidence.max-files-per-dispute` | `application.yml` or env `APP_EVIDENCE_MAXFILESPERDISPUTE` | `5` | Files one dispute may hold |
 | `JAVA_TOOL_OPTIONS` | env | `-XX:MaxRAMPercentage=75 ...` (image) | JVM tuning |
 
 Never commit real secrets. `.env` is git-ignored and `.env.example` documents the variables.
@@ -150,7 +155,10 @@ Never commit real secrets. `.env` is git-ignored and `.env.example` documents th
 | Dispute history | `/disputes` | Every dispute ever raised, a summary card per dispute (status, reason, dates, outcome note) linking to its details |
 | Dispute details | `/disputes/{id}` | The customer's own dispute with its full progress timeline |
 | Dispute queue (admin) | `/admin/disputes` | All customers' disputes, filterable by status and by the date raised (`?status=`, `?from=`, `?to=`, as `yyyy-MM-dd`) |
-| Review dispute (admin) | `/admin/disputes/{id}` | See the details and full history, move the dispute along, write a note to the customer |
+| Review dispute (admin) | `/admin/disputes/{id}` | See the details, full history and uploaded evidence, move the dispute along, write a note to the customer |
+| Upload evidence | `POST /disputes/{id}/evidence` | Customer attaches a PDF, PNG or JPG to their own open dispute (form on the dispute details page) |
+| Download evidence | `/disputes/{id}/evidence/{evidenceId}`, `/admin/disputes/{id}/evidence/{evidenceId}` | Customer (own disputes) or admin (any); always sent as an attachment |
+| Notifications | `/notifications` | Inbox for both roles, with an unread badge in the header, "Mark as read" and "Mark all as read" |
 
 Rules enforced in `DisputeService`:
 
@@ -159,6 +167,37 @@ Rules enforced in `DisputeService`:
 - Transactions older than `app.dispute.window-days` can't be disputed.
 - All lookups are scoped to the signed-in customer in the query itself, so another customer's id returns 404.
 - Raising a dispute locks the transaction row, so two simultaneous submissions can't both create an open dispute.
+
+### Notifications
+
+In-app only (there is no email or SMS channel; accounts have no email address). A notification is written in the same
+database transaction as the change it describes, so it exists only if the change was saved:
+
+| Event | Who is notified |
+|-------|-----------------|
+| A customer raises a dispute | every admin |
+| A customer uploads evidence | every admin |
+| An admin changes a dispute's status | the customer who raised it |
+
+Each person sees and changes only their own notifications (scoped by username in the query; someone else's id is a 404).
+All wording lives in `NotificationService`, so adding another channel later means calling it from those three methods.
+Notifications are kept indefinitely; there is no clean-up job yet.
+
+### Evidence uploads
+
+Customers can attach supporting files to their own **open** disputes. `EvidenceService` enforces, on every upload:
+
+- the dispute is the signed-in customer's own (someone else's id is a 404) and still `SUBMITTED` or `UNDER_REVIEW`;
+- at most `app.evidence.max-file-bytes` per file (default 5 MB) and `app.evidence.max-files-per-dispute` per dispute (default 5);
+- the **real** type: the file must start with the PDF, PNG or JPEG signature and its extension must agree. The type the
+  browser claims is ignored;
+- the same content can't be attached twice to one dispute (SHA-256).
+
+Files are stored under a random key (never the user's file name) by `EvidenceStorage`; the database keeps only the
+metadata (`dispute_evidence`). The default implementation writes to `app.evidence.storage-dir`. If the database
+transaction fails after the file was written, the file is removed. Downloads are always `Content-Disposition: attachment`
+with the detected type, so the browser never renders an uploaded file inside the site. The dispute row is locked during an
+upload, so concurrent uploads can't pass the limit and nothing can be added while an admin is closing the dispute.
 
 ### Admin (back-office)
 
@@ -294,9 +333,12 @@ curl -X POST https://your-host/api/v1/customers/batch \
 - **Logging:** SLF4J/Logback to stdout. Each line carries a correlation ID, also returned as `X-Correlation-Id`.
   Passwords, tokens and stack traces are not logged or shown to users.
 - **Shutdown:** graceful, with a 20 second drain.
+- **Evidence storage:** uploaded files live outside the database (`app.evidence.storage-dir`; the `evidence-data` volume
+  in Compose). Back the folder up together with the database and restore them as a pair: a database row without its file
+  shows as "not found" on download. Check free disk space; the worst case is files-per-dispute x max size x disputes.
 - **Schema changes:** add a new `src/main/resources/db/migration/V<n>__description.sql`. Hibernate never alters the
   schema. Take a database backup before deploying a migration.
-- **Time:** all timestamps are stored and handled in UTC.
+- **Time:** all timestamps are stored and handled in UTC and shown to users in South African Standard Time (SAST, UTC+2), with "SAST" after times of day. The conversion is in `DisplayTime`; the admin queue's date filter also uses South African days.
 - **CI:** `.github/workflows/ci.yml` runs `mvn verify` and a Docker build on every push and pull request.
 
 ## Project structure
@@ -311,7 +353,7 @@ src/main/java/com/example/disputeportal/
   exception/   Custom exceptions and @ControllerAdvice
   repository/  Spring Data repositories
   security/    SecurityConfig, UserDetailsService
-  service/     Business logic
+  service/     Business logic (including evidence storage and notifications)
 src/main/resources/
   db/migration/  Flyway SQL
   templates/     Thymeleaf pages, fragments, error pages
@@ -334,6 +376,9 @@ where it isn't obvious, why it is written that way.
 - *An admin decides a dispute:* `AdminDisputeController.decide` calls `AdminDisputeService.updateStatus`, which locks the
   dispute, checks the workflow in `DisputeStatus.canTransitionTo`, requires a note for final decisions, updates the dispute
   and appends a `DisputeEvent`. The customer sees the note and the new timeline entry.
+- *A customer uploads evidence:* `EvidenceController.upload` passes the file to `EvidenceService.upload`, which locks the
+  dispute, checks ownership, status, size, type, count and duplicates, writes the file through `EvidenceStorage`, saves the
+  `DisputeEvidence` row and asks `NotificationService` to tell the admins.
 - *A system loads transactions:* `ApiKeyAuthenticationFilter` checks the API key and size limits, then
   `TransactionLoadController` hands the validated batch to `TransactionLoadService`, which saves it atomically.
 - *A web login:* Spring Security's form login uses `CustomerUserDetailsService` to find the account;
@@ -356,6 +401,8 @@ applied migration would stop the app from starting. Add a new `Vn__*.sql` file f
 | `transactions` | A customer's card/account transactions. `reference` is unique (makes API loads idempotent); timestamps are UTC |
 | `disputes` | A dispute raised on a transaction: reason, the customer's description, current status, the admin's note and who last changed it |
 | `dispute_events` | Append-only history of every dispute: each status change with the note, who did it and when |
+| `notifications` | In-app messages: recipient username, dispute, text, created and read times |
+| `dispute_evidence` | Metadata of each uploaded file: name, detected type, size, random storage key, SHA-256, who and when. The bytes are in the evidence storage |
 | `api_clients` | Machine clients of the loading API. Only a SHA-256 hash of each key is stored |
 
 ## Troubleshooting
@@ -373,14 +420,20 @@ applied migration would stop the app from starting. Add a new `Vn__*.sql` file f
 
 - **No customer sign-up or password reset.** Customers exist only through the `demo` profile. A real deployment needs
   an onboarding path or an integration with your identity provider.
-- **No admin account management** or separate admin roles (all admins can decide all disputes). There's also no
-  notification to the customer when a dispute changes.
+- **No admin account management** or separate admin roles (all admins can decide all disputes). Notifications are in-app
+  only (no email or SMS) and are never purged.
 - **The audit history can still be edited by anyone with direct database access.** The app only inserts into it.
   For stricter compliance, restrict database permissions or ship the events to an external log store.
 - **Login throttling is per instance** (in memory). It is not a substitute for gateway-level rate limiting, MFA or
   an identity provider for admin accounts.
 - **No screen for API clients.** Keys are set through configuration: one loader and one provisioner client. Managing several clients, scoping
   a client to certain customers, and a per-batch audit table are not built (batches are logged as counts only).
+- **Evidence is not virus-scanned.** Type and size are checked and files are only ever served as downloads, but a
+  production deployment should scan uploads (for example with ClamAV) before admins open them. Only customers can upload;
+  admins can't request or attach files, and there is no way to delete evidence.
+- **An upload larger than the limit shows a 403 page, not a friendly message.** The web server stops reading the request
+  before Spring Security can see the CSRF token. The form states the limit; smaller mistakes (wrong type, empty file,
+  too many files) all get a clear message on the dispute page.
 - **Transactions can be loaded through the API, but there is no scheduled feed** from a core banking system.
 - **Only the health endpoint is exposed.** Add metrics and tracing to match your monitoring stack.
 - **Not run by the author.** Run `mvn verify` and `docker build` in your environment before relying on it.

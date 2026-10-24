@@ -47,6 +47,8 @@ class DisputeServiceTest {
     private DisputeRepository disputeRepository;
     @Mock
     private DisputeEventRepository eventRepository;
+    @Mock
+    private NotificationService notificationService;
 
     private DisputeService service;
     private final Customer customer = new Customer("thandi", "hash", "Thandi Nkosi");
@@ -54,7 +56,7 @@ class DisputeServiceTest {
     @BeforeEach
     void setUp() {
         service = new DisputeService(transactionRepository, disputeRepository, eventRepository,
-                new DisputeProperties(120), CLOCK);
+                new DisputeProperties(120), CLOCK, notificationService);
     }
 
     @Test
@@ -70,6 +72,7 @@ class DisputeServiceTest {
         assertThat(dispute.getCreatedBy()).isEqualTo("thandi");
         assertThat(dispute.getCreatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 13, 10, 0));
         verify(eventRepository).save(any(DisputeEvent.class));
+        verify(notificationService).disputeRaised(dispute);
     }
 
     @Test
@@ -81,6 +84,7 @@ class DisputeServiceTest {
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("open dispute");
         verify(disputeRepository, never()).save(any());
+        verify(notificationService, never()).disputeRaised(any());
     }
 
     @Test

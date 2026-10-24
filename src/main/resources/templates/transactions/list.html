@@ -27,7 +27,7 @@
             <tbody>
             <!--/* One row per transaction. A coloured edge (has-open-dispute) marks rows with a dispute in progress. */-->
             <tr th:each="t : ${transactions.content}" th:classappend="${t.disputeOpen} ? 'has-open-dispute'">
-                <td th:text="${#temporals.format(t.transactionDate, 'd MMM yyyy')}">1 Jan 2026</td>
+                <td th:text="${@displayTime.format(t.transactionDate, 'd MMM yyyy')}">1 Jan 2026</td>
                 <td>
                     <span class="merchant" th:text="${t.merchant}">Merchant</span>
                     <span class="meta" th:text="${t.reference}">TXN-000000</span>

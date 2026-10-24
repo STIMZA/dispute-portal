@@ -44,13 +44,15 @@ class AdminDisputeServiceTest {
     private DisputeRepository disputeRepository;
     @Mock
     private DisputeEventRepository eventRepository;
+    @Mock
+    private NotificationService notificationService;
 
     private AdminDisputeService service;
     private Dispute dispute;
 
     @BeforeEach
     void setUp() {
-        service = new AdminDisputeService(disputeRepository, eventRepository, CLOCK);
+        service = new AdminDisputeService(disputeRepository, eventRepository, CLOCK, notificationService);
         Customer customer = new Customer("thandi", "hash", "Thandi Nkosi");
         BankTransaction tx = new BankTransaction(customer, "TXN-1", "Takealot.com", "Card purchase",
                 new BigDecimal("1299.00"), "ZAR", LocalDateTime.of(2026, 10, 1, 12, 0));
@@ -68,6 +70,7 @@ class AdminDisputeServiceTest {
         assertThat(dispute.getResolutionNote()).isNull();
         assertThat(dispute.getUpdatedBy()).isEqualTo("agent1");
         assertThat(dispute.getUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 13, 10, 0));
+        verify(notificationService).statusChanged(dispute);
     }
 
     @Test
@@ -79,6 +82,7 @@ class AdminDisputeServiceTest {
                 .hasMessageContaining("note");
         assertThat(dispute.getStatus()).isEqualTo(DisputeStatus.SUBMITTED);
         verify(eventRepository, never()).save(any());
+        verify(notificationService, never()).statusChanged(any());
     }
 
     @Test

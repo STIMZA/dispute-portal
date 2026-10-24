@@ -10,7 +10,7 @@
     <dl class="summary">
         <div><dt>Merchant</dt><dd th:text="${transaction.merchant}">Merchant</dd></div>
         <div><dt>Reference</dt><dd th:text="${transaction.reference}">TXN-000000</dd></div>
-        <div><dt>Date</dt><dd th:text="${#temporals.format(transaction.transactionDate, 'd MMM yyyy')}">1 Jan 2026</dd></div>
+        <div><dt>Date</dt><dd th:text="${@displayTime.format(transaction.transactionDate, 'd MMM yyyy')}">1 Jan 2026</dd></div>
         <div><dt>Amount</dt>
             <dd><span th:text="${#numbers.formatDecimal(transaction.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
                 <span th:text="${transaction.currency}">ZAR</span></dd></div>
@@ -21,7 +21,7 @@
         <ul class="plain-list">
             <li th:each="d : ${previousDisputes}">
                 <span class="chip" th:classappend="'status-' + ${d.status.cssClass}" th:text="${d.status.label}">Status</span>
-                <span class="meta" th:text="'Raised ' + ${#temporals.format(d.createdAt, 'd MMM yyyy')} + ' - ' + ${d.reasonLabel}">Raised</span>
+                <span class="meta" th:text="'Raised ' + ${@displayTime.format(d.createdAt, 'd MMM yyyy')} + ' - ' + ${d.reasonLabel}">Raised</span>
                 <p class="details" th:if="${d.resolutionNote}" th:text="${d.resolutionNote}">Outcome</p>
                 <a th:href="@{/disputes/{id}(id=${d.id})}">View progress</a>
             </li>

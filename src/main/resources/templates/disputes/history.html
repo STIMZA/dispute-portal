@@ -32,8 +32,8 @@
                       th:text="${d.status.label}">Submitted</span>
             </header>
             <p class="meta">
-                Raised <span th:text="${#temporals.format(d.createdAt, 'd MMM yyyy')}">1 Jan 2026</span>,
-                last update <span th:text="${#temporals.format(d.updatedAt, 'd MMM yyyy')}">1 Jan 2026</span>
+                Raised <span th:text="${@displayTime.format(d.createdAt, 'd MMM yyyy')}">1 Jan 2026</span>,
+                last update <span th:text="${@displayTime.format(d.updatedAt, 'd MMM yyyy')}">1 Jan 2026</span>
             </p>
             <p class="details" th:if="${d.resolutionNote}" th:text="${d.resolutionNote}">Outcome note</p>
             <p class="meta"><a th:href="@{/disputes/{id}(id=${d.id})}"

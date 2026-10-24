@@ -17,7 +17,8 @@ RUN --mount=type=cache,target=/root/.m2 \
 
 # ---- Runtime stage: JRE only, non-root user ----
 FROM eclipse-temurin:17-jre-alpine
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup -S app && adduser -S app -G app \
+    && mkdir -p /data/evidence && chown -R app:app /data
 WORKDIR /app
 COPY --from=build --chown=app:app /workspace/app.jar app.jar
 USER app
@@ -26,6 +27,9 @@ USER app
 # demo data, start the container with -e SPRING_PROFILES_ACTIVE=dev.
 ENV SPRING_PROFILES_ACTIVE=prod \
     JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+
+# Uploaded dispute evidence. Mount a volume here so files survive container replacement (see docker-compose.yml).
+VOLUME /data/evidence
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=45s --retries=3 \

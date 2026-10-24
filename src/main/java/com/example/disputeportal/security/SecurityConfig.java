@@ -70,6 +70,8 @@ public class SecurityConfig {
                 // Authorization is enforced here and again on the admin service (@PreAuthorize).
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/transactions/**", "/disputes/**").hasRole("CUSTOMER")
+                // Notifications belong to whoever is signed in, customer or admin (each sees only their own).
+                .requestMatchers("/notifications/**").authenticated()
                 .anyRequest().authenticated())
             .formLogin(form -> form
                 .loginPage("/login")

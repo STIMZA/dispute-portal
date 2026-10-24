@@ -26,6 +26,7 @@ import com.example.disputeportal.repository.BankTransactionRepository;
 import com.example.disputeportal.repository.CustomerRepository;
 import com.example.disputeportal.repository.DisputeEventRepository;
 import com.example.disputeportal.repository.DisputeRepository;
+import com.example.disputeportal.service.NotificationService;
 
 /**
  * This component will load some demo data into the database on startup. This
@@ -58,6 +59,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final BankTransactionRepository transactions;
     private final DisputeRepository disputes;
     private final DisputeEventRepository events;
+    private final NotificationService notifications;
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
     private final String demoPassword;
@@ -68,13 +70,14 @@ public class DemoDataSeeder implements CommandLineRunner {
     private int referenceCounter = 100000;
 
     public DemoDataSeeder(CustomerRepository customers, BankTransactionRepository transactions,
-            DisputeRepository disputes, DisputeEventRepository events,
+            DisputeRepository disputes, DisputeEventRepository events, NotificationService notifications,
             PasswordEncoder passwordEncoder, Clock clock,
             @Value("${app.demo.password}") String demoPassword) {
         this.customers = customers;
         this.transactions = transactions;
         this.disputes = disputes;
         this.events = events;
+        this.notifications = notifications;
         this.passwordEncoder = passwordEncoder;
         this.clock = clock;
         this.demoPassword = demoPassword;
@@ -111,17 +114,23 @@ public class DemoDataSeeder implements CommandLineRunner {
         }
 
         // Disputes in different states so the history page has something to show.
-        raise(thandiTx.get(2), DisputeReason.DUPLICATE_CHARGE,
+        // Each dispute also gets the notifications it would have produced, so both inboxes have content to show.
+        Dispute open = raise(thandiTx.get(2), DisputeReason.DUPLICATE_CHARGE,
                 "Charged twice for the same trip on the same evening.", now, 1, null, null);
-        raise(thandiTx.get(5), DisputeReason.INCORRECT_AMOUNT,
+        notifications.disputeRaised(open);
+        Dispute underReview = raise(thandiTx.get(5), DisputeReason.INCORRECT_AMOUNT,
                 "The slip said R400 but I was charged more.", now, 1, DisputeStatus.UNDER_REVIEW,
                 "We have asked the merchant for the till slip.");
-        raise(thandiTx.get(9), DisputeReason.UNRECOGNISED_TRANSACTION,
+        notifications.disputeRaised(underReview);
+        notifications.statusChanged(underReview);
+        Dispute resolved = raise(thandiTx.get(9), DisputeReason.UNRECOGNISED_TRANSACTION,
                 "I have no subscription with this merchant.", now, 2, DisputeStatus.RESOLVED_IN_FAVOUR,
                 "Refunded in full and the merchant has been blocked on your card.");
-        raise(thandiTx.get(13), DisputeReason.GOODS_NOT_RECEIVED,
+        notifications.statusChanged(resolved);
+        Dispute rejected = raise(thandiTx.get(13), DisputeReason.GOODS_NOT_RECEIVED,
                 "The parcel never arrived.", now, 2, DisputeStatus.REJECTED,
                 "Courier records show the parcel was delivered and signed for.");
+        notifications.statusChanged(rejected);
         log.info("Demo data loaded: customers 'thandi' and 'sipho', admin 'demo-admin'");
     }
 
@@ -139,7 +148,7 @@ public class DemoDataSeeder implements CommandLineRunner {
      * finalStatus is given, the demo admin has already decided it, so the
      * history pages show every state (open, under review, resolved, rejected).
      */
-    private void raise(BankTransaction tx, DisputeReason reason, String details, LocalDateTime now,
+    private Dispute raise(BankTransaction tx, DisputeReason reason, String details, LocalDateTime now,
             int daysAfterTransaction, DisputeStatus finalStatus, String note) {
         LocalDateTime created = tx.getTransactionDate().plusDays(daysAfterTransaction);
         if (created.isAfter(now)) {
@@ -156,5 +165,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         if (finalStatus != null) {
             events.save(new DisputeEvent(dispute, DisputeStatus.SUBMITTED, finalStatus, note, DEMO_ADMIN, updated));
         }
+        return dispute;
     }
 }

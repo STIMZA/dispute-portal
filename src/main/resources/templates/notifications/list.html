@@ -1,0 +1,47 @@
+<!--/*
+    The signed-in user's notifications, newest first. Model: 'notifications' (a Page of NotificationRow).
+    Customers and admins both use this page; the link goes to the dispute page for the user's role.
+*/-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Notifications')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('notifications')}"></header>
+<main>
+    <h1>Notifications</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="empty" th:if="${notifications.empty}">
+        <p>You have no notifications yet.</p>
+    </div>
+
+    <div th:unless="${notifications.empty}">
+        <!--/* Toolbar above the list: the button sits at the right, with clear space before the first card. */-->
+        <form class="notification-toolbar" th:action="@{/notifications/read-all}" method="post">
+            <button type="submit" class="button secondary small">Mark all as read</button>
+        </form>
+
+        <ul class="plain-list notification-list">
+            <li class="card notification" th:each="n : ${notifications.content}"
+                th:classappend="${n.read} ? '' : 'unread'">
+                <p class="notification-message" th:text="${n.message}">Message</p>
+                <p class="meta">
+                    <span th:text="${@displayTime.format(n.createdAt, 'd MMM yyyy HH:mm')}">1 Jan 2026 10:00</span>
+                    <span th:unless="${n.read}"> - unread</span>
+                </p>
+                <div class="actions">
+                    <a sec:authorize="hasRole('CUSTOMER')" th:href="@{/disputes/{id}(id=${n.disputeId})}">View dispute</a>
+                    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/disputes/{id}(id=${n.disputeId})}">Review dispute</a>
+                    <form th:unless="${n.read}" th:action="@{/notifications/{id}/read(id=${n.id})}" method="post">
+                        <input type="hidden" name="page" th:value="${notifications.number}">
+                        <button type="submit" class="link-button">Mark as read</button>
+                    </form>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <nav th:replace="~{fragments/layout :: pager(${notifications}, '/notifications')}"></nav>
+</main>
+</body>
+</html>

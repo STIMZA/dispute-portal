@@ -21,6 +21,9 @@ logging:
     root: INFO
 
 app:
+  evidence:
+    # Must be a persistent, backed-up location (the Docker image declares /data/evidence as a volume).
+    storage-dir: ${EVIDENCE_DIR:/data/evidence}
   api:
     # The API refuses plain-HTTP calls. Behind a TLS-terminating proxy it must send X-Forwarded-Proto.
     require-https: ${API_REQUIRE_HTTPS:true}

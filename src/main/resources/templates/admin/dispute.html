@@ -1,4 +1,4 @@
-<!--/* Admin review page for one dispute. Model: dispute (AdminDisputeRow), events (history), form (AdminDecisionForm). Admin role only. */-->
+<!--/* Admin review page for one dispute. Model: dispute (AdminDisputeRow), events (history), evidence (EvidenceRow list), form (AdminDecisionForm). Admin role only. */-->
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Review dispute')}"></head>
@@ -18,17 +18,30 @@
             <dd><span th:text="${#numbers.formatDecimal(dispute.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
                 <span th:text="${dispute.currency}">ZAR</span></dd></div>
         <div><dt>Reason</dt><dd th:text="${dispute.reasonLabel}">Reason</dd></div>
-        <div><dt>Raised</dt><dd th:text="${#temporals.format(dispute.createdAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</dd></div>
+        <div><dt>Raised</dt><dd th:text="${@displayTime.format(dispute.createdAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</dd></div>
         <div><dt>Status</dt><dd><span class="chip" th:classappend="'status-' + ${dispute.status.cssClass}"
                                       th:text="${dispute.status.label}">Submitted</span></dd></div>
         <div><dt>Last update</dt>
-            <dd><span th:text="${#temporals.format(dispute.updatedAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</span>
+            <dd><span th:text="${@displayTime.format(dispute.updatedAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</span>
                 <span class="meta" th:if="${dispute.updatedBy}" th:text="'by ' + ${dispute.updatedBy}">by admin</span></dd></div>
     </dl>
 
     <section class="card section">
         <h2>Customer's description</h2>
         <p class="details" th:text="${dispute.details}">Details</p>
+    </section>
+
+    <!--/* Evidence the customer uploaded (model 'evidence'). Downloads are attachments from /admin/disputes/{id}/evidence/{evidenceId}. */-->
+    <section class="card section">
+        <h2>Evidence from the customer</h2>
+        <p class="meta" th:if="${evidence.empty}">The customer hasn't uploaded any evidence.</p>
+        <ul class="plain-list" th:unless="${evidence.empty}">
+            <li th:each="e : ${evidence}">
+                <a th:href="@{/admin/disputes/{id}/evidence/{evidenceId}(id=${dispute.id},evidenceId=${e.id})}"
+                   th:text="${e.filename}">receipt.pdf</a>
+                <span class="meta" th:text="${e.sizeLabel()} + ' - ' + ${e.uploadedBy} + ', ' + ${@displayTime.format(e.uploadedAt, 'd MMM yyyy HH:mm')}">120 KB - thandi, 1 Jan 2026</span>
+            </li>
+        </ul>
     </section>
 
     <section class="card section" th:if="${dispute.resolutionNote}">

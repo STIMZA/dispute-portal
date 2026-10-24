@@ -3,10 +3,12 @@ package com.example.disputeportal.controller;
 import java.security.Principal;
 import java.time.LocalDate;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.ui.Model;
@@ -25,6 +27,7 @@ import com.example.disputeportal.dto.AdminDisputeRow;
 import com.example.disputeportal.entity.DisputeStatus;
 import com.example.disputeportal.exception.BusinessRuleException;
 import com.example.disputeportal.service.AdminDisputeService;
+import com.example.disputeportal.service.EvidenceService;
 
 import jakarta.validation.Valid;
 
@@ -44,9 +47,11 @@ public class AdminDisputeController {
     private static final int PAGE_SIZE = 15;
 
     private final AdminDisputeService adminDisputeService;
+    private final EvidenceService evidenceService;
 
-    public AdminDisputeController(AdminDisputeService adminDisputeService) {
+    public AdminDisputeController(AdminDisputeService adminDisputeService, EvidenceService evidenceService) {
         this.adminDisputeService = adminDisputeService;
+        this.evidenceService = evidenceService;
     }
 
     /**
@@ -92,15 +97,25 @@ public class AdminDisputeController {
 
     /**
      * Rather than a queue, this shows the details of a single dispute,
-     * including its history of events and a form for the admin to make a
-     * decision.
+     * including its history of events, the evidence the customer uploaded and
+     * a form for the admin to make a decision.
      */
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("dispute", adminDisputeService.get(id));
         model.addAttribute("events", adminDisputeService.events(id));
+        model.addAttribute("evidence", evidenceService.listForAdmin(id));
         model.addAttribute("form", new AdminDecisionForm());
         return "admin/dispute";
+    }
+
+    /**
+     * Downloads one evidence file of any dispute. Sent as an attachment, never
+     * displayed inside the site.
+     */
+    @GetMapping("/{id}/evidence/{evidenceId}")
+    public ResponseEntity<Resource> downloadEvidence(@PathVariable Long id, @PathVariable Long evidenceId) {
+        return EvidenceDownloads.attachment(evidenceService.downloadForAdmin(id, evidenceId));
     }
 
     /**
@@ -124,6 +139,7 @@ public class AdminDisputeController {
         }
         model.addAttribute("dispute", adminDisputeService.get(id));
         model.addAttribute("events", adminDisputeService.events(id));
+        model.addAttribute("evidence", evidenceService.listForAdmin(id));
         return "admin/dispute";
     }
 }

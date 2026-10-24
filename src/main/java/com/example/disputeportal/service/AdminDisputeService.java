@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.example.disputeportal.config.DisplayTime;
 import com.example.disputeportal.dto.AdminDisputeRow;
 import com.example.disputeportal.dto.DisputeEventRow;
 import com.example.disputeportal.entity.BankTransaction;
@@ -40,16 +41,18 @@ public class AdminDisputeService {
     private final DisputeRepository disputeRepository;
     private final DisputeEventRepository eventRepository;
     private final Clock clock;
+    private final NotificationService notificationService;
 
     /**
      * Dependencies are injected through the constructor, as in the other
      * services.
      */
     public AdminDisputeService(DisputeRepository disputeRepository, DisputeEventRepository eventRepository,
-            Clock clock) {
+            Clock clock, NotificationService notificationService) {
         this.disputeRepository = disputeRepository;
         this.eventRepository = eventRepository;
         this.clock = clock;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -72,13 +75,14 @@ public class AdminDisputeService {
             filter = filter.and((root, query, cb) -> cb.equal(root.get("status"), status));
         }
         if (from != null) {
-            // createdAt is stored in UTC; the range starts at midnight of the first day...
-            LocalDateTime start = from.atStartOfDay();
+            // createdAt is stored in UTC, but the dates the admin picks are South African days: the range starts at
+            // midnight SAST of the first day...
+            LocalDateTime start = DisplayTime.startOfDayUtc(from);
             filter = filter.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.<LocalDateTime>get("createdAt"), start));
         }
         if (to != null) {
             // ...and ends before midnight of the day after the last day, so the whole last day is included.
-            LocalDateTime endExclusive = to.plusDays(1).atStartOfDay();
+            LocalDateTime endExclusive = DisplayTime.startOfDayUtc(to.plusDays(1));
             filter = filter.and((root, query, cb) -> cb.lessThan(root.<LocalDateTime>get("createdAt"), endExclusive));
         }
         return disputeRepository.findAll(filter, pageable).map(this::toRow);
@@ -109,8 +113,8 @@ public class AdminDisputeService {
 
     /**
      * Records an admin's decision on a dispute by moving it to a new status,
-     * stores the note for the customer and appends an entry to the dispute's
-     * history.
+     * stores the note for the customer, appends an entry to the dispute's
+     * history and notifies the customer.
      *
      * The dispute row is locked while this runs, so two admins can't decide the
      * same dispute at once. The second waits, then sees the new status and is
@@ -149,6 +153,8 @@ public class AdminDisputeService {
         LocalDateTime now = LocalDateTime.now(clock);
         dispute.changeStatus(next, cleanNote, now, adminUsername);
         eventRepository.save(new DisputeEvent(dispute, current, next, cleanNote, adminUsername, now));
+        // Same database transaction as the change: the customer is only told about a decision that was saved.
+        notificationService.statusChanged(dispute);
         log.info("Dispute {} moved from {} to {} by {}", id, current, next, adminUsername);
     }
 

@@ -29,6 +29,10 @@
         <th:block sec:authorize="hasRole('ADMIN')">
             <a th:href="@{/admin/disputes}" th:aria-current="${active == 'admin'} ? 'page'">Dispute queue</a>
         </th:block>
+        <!--/* Both roles have an inbox. 'unreadNotifications' comes from NotificationModelAdvice and is absent on pages it doesn't cover. */-->
+        <a th:href="@{/notifications}" th:aria-current="${active == 'notifications'} ? 'page'">Notifications<span
+                class="badge" th:if="${unreadNotifications != null and unreadNotifications > 0}"
+                th:text="${unreadNotifications}" th:attr="aria-label=${unreadNotifications} + ' unread'">3</span></a>
     </nav>
     <!--/* Sign out is a POST form, not a link, so the CSRF token that th:action adds protects it. */-->
     <form class="signout" th:action="@{/logout}" method="post">
@@ -53,7 +57,7 @@
             <span class="chip" th:classappend="'status-' + ${e.toStatus.cssClass}" th:text="${e.toStatus.label}">Status</span>
             <span class="meta" th:text="${e.fromStatus == null} ? 'Dispute raised' : 'Status changed'">Event</span>
         </div>
-        <p class="meta" th:text="${#temporals.format(e.createdAt, 'd MMM yyyy HH:mm')} + ' by ' + ${e.actor}">Date</p>
+        <p class="meta" th:text="${@displayTime.format(e.createdAt, 'd MMM yyyy HH:mm')} + ' by ' + ${e.actor}">Date</p>
         <p class="details" th:if="${e.note}" th:text="${e.note}">Note</p>
     </li>
 </ol>

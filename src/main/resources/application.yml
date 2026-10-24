@@ -44,6 +44,12 @@ app:
   # How many days after a transaction it can still be disputed.
   dispute:
     window-days: 120
+  # Evidence uploads. The multipart size limits are derived from max-file-bytes (see UploadConfig).
+  evidence:
+    # Where files are written. Dev/test default to the temp folder; the prod profile uses /data/evidence (a Docker volume).
+    storage-dir: ${EVIDENCE_DIR:${java.io.tmpdir}/dispute-portal-evidence}
+    max-file-bytes: 5242880
+    max-files-per-dispute: 5
 
 logging:
   # Adds the per-request correlation id to every log line (see CorrelationIdFilter).
