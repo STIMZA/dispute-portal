@@ -1,0 +1,92 @@
+<!--/* Admin review page for one dispute. Model: dispute (AdminDisputeRow), events (history), evidence (EvidenceRow list), form (AdminDecisionForm). Admin role only. */-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Review dispute')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('admin')}"></header>
+<main>
+    <p><a th:href="@{/admin/disputes}">Back to the queue</a></p>
+    <h1>Dispute <span th:text="'#' + ${dispute.id}">#1</span></h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <dl class="summary">
+        <div><dt>Customer</dt><dd><span th:text="${dispute.customerName}">Customer</span>
+            <span class="meta" th:text="${dispute.customerUsername}">username</span></dd></div>
+        <div><dt>Transaction</dt><dd><span th:text="${dispute.merchant}">Merchant</span>
+            <span class="meta" th:text="${dispute.transactionReference}">TXN-000000</span></dd></div>
+        <div><dt>Amount</dt>
+            <dd><span th:text="${#numbers.formatDecimal(dispute.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                <span th:text="${dispute.currency}">ZAR</span></dd></div>
+        <div><dt>Reason</dt><dd th:text="${dispute.reasonLabel}">Reason</dd></div>
+        <div><dt>Raised</dt><dd th:text="${@displayTime.format(dispute.createdAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</dd></div>
+        <div><dt>Status</dt><dd><span class="chip" th:classappend="'status-' + ${dispute.status.cssClass}"
+                                      th:text="${dispute.status.label}">Submitted</span></dd></div>
+        <div><dt>Last update</dt>
+            <dd><span th:text="${@displayTime.format(dispute.updatedAt, 'd MMM yyyy HH:mm')}">1 Jan 2026</span>
+                <span class="meta" th:if="${dispute.updatedBy}" th:text="'by ' + ${dispute.updatedBy}">by admin</span></dd></div>
+    </dl>
+
+    <section class="card section">
+        <h2>Customer's description</h2>
+        <p class="details" th:text="${dispute.details}">Details</p>
+    </section>
+
+    <!--/* Evidence the customer uploaded (model 'evidence'). Downloads are attachments from /admin/disputes/{id}/evidence/{evidenceId}. */-->
+    <section class="card section">
+        <h2>Evidence from the customer</h2>
+        <p class="meta" th:if="${evidence.empty}">The customer hasn't uploaded any evidence.</p>
+        <ul class="plain-list" th:unless="${evidence.empty}">
+            <li th:each="e : ${evidence}">
+                <a th:href="@{/admin/disputes/{id}/evidence/{evidenceId}(id=${dispute.id},evidenceId=${e.id})}"
+                   th:text="${e.filename}">receipt.pdf</a>
+                <span class="meta" th:text="${e.sizeLabel()} + ' - ' + ${e.uploadedBy} + ', ' + ${@displayTime.format(e.uploadedAt, 'd MMM yyyy HH:mm')}">120 KB - thandi, 1 Jan 2026</span>
+            </li>
+        </ul>
+    </section>
+
+    <section class="card section" th:if="${dispute.resolutionNote}">
+        <h2>Current note to the customer</h2>
+        <p class="details" th:text="${dispute.resolutionNote}">Note</p>
+    </section>
+
+    <section class="card section">
+        <h2>History</h2>
+        <div th:replace="~{fragments/layout :: timeline(${events})}"></div>
+    </section>
+
+    <!--/* Shown instead of the form once the dispute is closed. */-->
+    <p class="notice notice-ok" th:if="${dispute.nextStatuses.empty}">
+        This dispute is closed and can't be changed.</p>
+
+    <!--/*
+        Decision form, shown only while the dispute can still change. The dropdown offers only the statuses allowed next
+        (dispute.nextStatuses), and the server checks the workflow again.
+    */-->
+    <form class="card section" th:unless="${dispute.nextStatuses.empty}"
+          th:action="@{/admin/disputes/{id}/status(id=${dispute.id})}" th:object="${form}" method="post" novalidate>
+        <h2>Update this dispute</h2>
+        <div class="notice notice-bad" role="alert" th:if="${#fields.hasErrors('*')}">
+            <p>We couldn't save that change:</p>
+            <ul>
+                <li th:each="err : ${#fields.errors('*')}" th:text="${err}">Error</li>
+            </ul>
+        </div>
+
+        <label for="status">New status</label>
+        <select id="status" th:field="*{status}" required>
+            <option value="">Select a status</option>
+            <option th:each="s : ${dispute.nextStatuses}" th:value="${s}" th:text="${s.label}">Status</option>
+        </select>
+
+        <label for="note">Note to the customer</label>
+        <textarea id="note" th:field="*{note}" rows="4" maxlength="500" aria-describedby="note-hint"></textarea>
+        <p id="note-hint" class="meta">Required when resolving or rejecting. The customer sees this in their dispute history.</p>
+
+        <div class="actions">
+            <button type="submit" class="button">Save</button>
+            <a class="button secondary" th:href="@{/admin/disputes}">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

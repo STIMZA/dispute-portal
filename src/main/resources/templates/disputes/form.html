@@ -1,0 +1,63 @@
+<!--/* Dispute form. Model: transaction (TransactionRow), form (DisputeForm), reasons (dropdown options), previousDisputes. */-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Dispute a transaction')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('transactions')}"></header>
+<main>
+    <h1>Dispute a transaction</h1>
+
+    <dl class="summary">
+        <div><dt>Merchant</dt><dd th:text="${transaction.merchant}">Merchant</dd></div>
+        <div><dt>Reference</dt><dd th:text="${transaction.reference}">TXN-000000</dd></div>
+        <div><dt>Date</dt><dd th:text="${@displayTime.format(transaction.transactionDate, 'd MMM yyyy')}">1 Jan 2026</dd></div>
+        <div><dt>Amount</dt>
+            <dd><span th:text="${#numbers.formatDecimal(transaction.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                <span th:text="${transaction.currency}">ZAR</span></dd></div>
+    </dl>
+
+    <section class="card section" th:unless="${previousDisputes.empty}">
+        <h2>Earlier disputes on this transaction</h2>
+        <ul class="plain-list">
+            <li th:each="d : ${previousDisputes}">
+                <span class="chip" th:classappend="'status-' + ${d.status.cssClass}" th:text="${d.status.label}">Status</span>
+                <span class="meta" th:text="'Raised ' + ${@displayTime.format(d.createdAt, 'd MMM yyyy')} + ' - ' + ${d.reasonLabel}">Raised</span>
+                <p class="details" th:if="${d.resolutionNote}" th:text="${d.resolutionNote}">Outcome</p>
+                <a th:href="@{/disputes/{id}(id=${d.id})}">View progress</a>
+            </li>
+        </ul>
+    </section>
+
+    <!--/*
+        th:object binds the form to DisputeForm and th:field fills each input's id, name and value. Validation messages
+        come from the annotations on DisputeForm. th:action adds the CSRF token.
+    */-->
+    <form class="card section" th:action="@{/transactions/{id}/dispute(id=${transaction.id})}" th:object="${form}"
+          method="post" novalidate>
+        <div class="notice notice-bad" role="alert" th:if="${#fields.hasErrors('*')}">
+            <p>We couldn't submit your dispute:</p>
+            <ul>
+                <li th:each="err : ${#fields.errors('*')}" th:text="${err}">Error</li>
+            </ul>
+        </div>
+
+        <label for="reason">Reason</label>
+        <!--/* Bound to DisputeForm.reason. The empty first option forces a deliberate choice. */-->
+        <select id="reason" th:field="*{reason}" required>
+            <option value="">Select a reason</option>
+            <option th:each="r : ${reasons}" th:value="${r}" th:text="${r.label}">Reason</option>
+        </select>
+
+        <label for="details">What happened?</label>
+        <textarea id="details" th:field="*{details}" rows="6" maxlength="1000" required
+                  aria-describedby="details-hint"></textarea>
+        <p id="details-hint" class="meta">Include dates, amounts and anything the merchant told you. Up to 1000 characters.</p>
+
+        <div class="actions">
+            <button type="submit" class="button">Submit dispute</button>
+            <a class="button secondary" th:href="@{/transactions}">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

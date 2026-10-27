@@ -1,0 +1,68 @@
+<!--/* One dispute in full. Model: 'detail' (DisputeDetail): the dispute summary, the customer's description and the progress timeline. */-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Dispute details')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('disputes')}"></header>
+<main>
+    <p><a th:href="@{/disputes}">Back to dispute history</a></p>
+    <h1>Dispute details</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!--/* Key facts as a description list (semantic markup that screen readers announce as term/value pairs). */-->
+    <dl class="summary">
+        <div><dt>Transaction</dt><dd><span th:text="${detail.dispute.merchant}">Merchant</span>
+            <span class="meta" th:text="${detail.dispute.transactionReference}">TXN-000000</span></dd></div>
+        <div><dt>Amount</dt>
+            <dd><span th:text="${#numbers.formatDecimal(detail.dispute.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                <span th:text="${detail.dispute.currency}">ZAR</span></dd></div>
+        <div><dt>Reason</dt><dd th:text="${detail.dispute.reasonLabel}">Reason</dd></div>
+        <div><dt>Status</dt><dd><span class="chip" th:classappend="'status-' + ${detail.dispute.status.cssClass}"
+                                      th:text="${detail.dispute.status.label}">Submitted</span></dd></div>
+    </dl>
+
+    <section class="card section">
+        <h2>What you told us</h2>
+        <p class="details" th:text="${detail.details}">Details</p>
+    </section>
+
+    <section class="card section">
+        <h2>Progress</h2>
+        <div th:replace="~{fragments/layout :: timeline(${detail.events})}"></div>
+    </section>
+
+    <!--/*
+        Evidence. Model: 'evidence' (EvidenceRow list), 'limits' (EvidenceLimits), 'canUpload' (open dispute with room
+        for more files). Files download as attachments from /disputes/{id}/evidence/{evidenceId}.
+    */-->
+    <section class="card section">
+        <h2>Supporting evidence</h2>
+        <p class="meta" th:if="${evidence.empty}">You haven't uploaded any evidence yet.</p>
+        <ul class="plain-list" th:unless="${evidence.empty}">
+            <li th:each="e : ${evidence}">
+                <a th:href="@{/disputes/{id}/evidence/{evidenceId}(id=${detail.dispute.id},evidenceId=${e.id})}"
+                   th:text="${e.filename}">receipt.pdf</a>
+                <span class="meta" th:text="${e.sizeLabel()} + ' - added ' + ${@displayTime.format(e.uploadedAt, 'd MMM yyyy HH:mm')}">120 KB - added 1 Jan 2026</span>
+            </li>
+        </ul>
+
+        <!--/* enctype multipart/form-data is required for file uploads. th:action adds the CSRF token. */-->
+        <form th:if="${canUpload}" th:action="@{/disputes/{id}/evidence(id=${detail.dispute.id})}" method="post"
+              enctype="multipart/form-data">
+            <label for="file">Add a file</label>
+            <input id="file" type="file" name="file" required aria-describedby="file-hint"
+                   accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg">
+            <p id="file-hint" class="meta"
+               th:text="'PDF, PNG or JPG, up to ' + ${limits.maxFileLabel()} + ' each, ' + ${limits.maxFiles} + ' files per dispute.'">Limits</p>
+            <div class="actions">
+                <button type="submit" class="button">Upload</button>
+            </div>
+        </form>
+        <p class="meta" th:if="${!canUpload and !detail.dispute.status.open}">
+            This dispute is closed, so no more evidence can be added.</p>
+        <p class="meta" th:if="${!canUpload and detail.dispute.status.open}"
+           th:text="'This dispute already has the maximum of ' + ${limits.maxFiles} + ' files.'">Limit reached</p>
+    </section>
+</main>
+</body>
+</html>

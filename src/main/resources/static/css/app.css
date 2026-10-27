@@ -1,0 +1,183 @@
+/*
+   Design tokens. Colours, and the status colours used by the chips and notices, are defined once here.
+   Text/background pairs are chosen to keep a readable contrast ratio.
+*/
+:root {
+    --bg: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #14262b;
+    --muted: #4f6468;
+    --line: #d3dddb;
+    --brand: #0e6b5c;
+    --brand-dark: #0a4f44;
+    --open-bg: #e1ecf8;   --open-fg: #1d4e89;
+    --review-bg: #fcefd9; --review-fg: #7a4300;
+    --won-bg: #ddf2e6;    --won-fg: #0b5d3b;
+    --lost-bg: #f9e1e2;   --lost-fg: #8e1f24;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body.centered { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
+
+h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 1rem; }
+
+a { color: var(--brand-dark); }
+/* A clear focus ring so keyboard users can see where they are (accessibility). */
+:focus-visible { outline: 3px solid #f2a900; outline-offset: 2px; }
+
+/* Top bar: brand, navigation and sign-out. Wraps onto several lines on narrow screens. */
+.site-header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem;
+    padding: 0.75rem 1.25rem; background: var(--ink); color: #fff;
+}
+.site-header a { color: #fff; text-decoration: none; }
+.brand { font-weight: 700; font-size: 1.1rem; }
+.site-header nav { display: flex; gap: 1rem; flex: 1; }
+.site-header nav a { padding: 0.25rem 0; border-bottom: 2px solid transparent; }
+.site-header nav a[aria-current="page"] { border-bottom-color: #7fd6c4; }
+.signout { display: flex; align-items: center; gap: 0.75rem; margin: 0; }
+.who { color: #c4d4d1; }
+.link-button { background: none; border: 0; padding: 0; color: #fff; text-decoration: underline; cursor: pointer; font: inherit; }
+
+main { max-width: 62rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+main.narrow, .narrow { max-width: 26rem; width: 100%; }
+
+/* The white panel used for forms and grouped content. */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 1.25rem; }
+
+label { display: block; font-weight: 600; margin: 1rem 0 0.25rem; }
+input, select, textarea {
+    width: 100%; padding: 0.55rem 0.65rem; font: inherit; color: inherit;
+    border: 1px solid #8ea3a0; border-radius: 6px; background: #fff;
+}
+textarea { resize: vertical; }
+
+/* Buttons and button-styled links. Variants: .secondary (outlined) and .small. */
+.button {
+    display: inline-block; padding: 0.55rem 1.1rem; border: 0; border-radius: 6px; cursor: pointer;
+    background: var(--brand); color: #fff; font: inherit; font-weight: 600; text-decoration: none;
+}
+.button:hover { background: var(--brand-dark); }
+.button.secondary { background: transparent; color: var(--brand-dark); border: 1px solid var(--brand); }
+.button.secondary:hover { background: #e6f1ee; }
+.button.small { padding: 0.25rem 0.75rem; font-size: 0.9rem; }
+form > .button { margin-top: 1.25rem; }
+.actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+
+/* Lets wide tables scroll sideways on small screens. */
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.7rem 0.9rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+thead th { font-size: 0.9rem; color: var(--muted); background: #f8faf9; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Coloured edge on transaction rows that have a dispute in progress. */
+tr.has-open-dispute td:first-child { box-shadow: inset 4px 0 0 var(--open-fg); }
+
+.merchant { display: block; font-weight: 600; }
+.meta { display: block; color: var(--muted); font-size: 0.875rem; }
+.num .meta { display: inline; }
+.note { margin-top: 0.25rem; max-width: 22rem; }
+
+/* Small pill showing a status. */
+.chip { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.875rem; font-weight: 600; text-decoration: none; }
+.chip::before { margin-right: 0.35rem; }
+/*
+   Status colours. Each status also has its own symbol (the ::before rules) so the meaning never depends on colour
+   alone.
+*/
+.status-open   { background: var(--open-bg);   color: var(--open-fg); }
+.status-open::before   { content: "\25CF"; }
+.status-review { background: var(--review-bg); color: var(--review-fg); }
+.status-review::before { content: "\25D0"; }
+.status-won    { background: var(--won-bg);    color: var(--won-fg); }
+.status-won::before    { content: "\2713"; }
+.status-lost   { background: var(--lost-bg);   color: var(--lost-fg); }
+.status-lost::before   { content: "\2715"; }
+
+/* Success and error messages. */
+.notice { padding: 0.7rem 0.9rem; border-radius: 6px; margin: 0 0 1rem; }
+.notice p { margin: 0 0 0.25rem; }
+.notice ul { margin: 0; padding-left: 1.2rem; }
+.notice-ok  { background: var(--won-bg);  color: var(--won-fg); }
+.notice-bad { background: var(--lost-bg); color: var(--lost-fg); }
+
+/* Key facts laid out in a responsive grid (used on the form and details pages). */
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem 1.5rem; margin: 0 0 1.25rem; }
+.summary dt { color: var(--muted); font-size: 0.875rem; }
+.summary dd { margin: 0; font-weight: 600; }
+
+.empty { padding: 2rem 0; color: var(--muted); }
+.pager { display: flex; justify-content: center; align-items: center; gap: 1.25rem; margin-top: 1.25rem; }
+
+/* Hidden on screen but still read by screen readers (for table captions and icon-only labels). */
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Small-screen adjustments. */
+@media (max-width: 40rem) {
+    th, td { padding: 0.6rem; }
+    .site-header nav { order: 3; flex-basis: 100%; }
+}
+
+/* Admin back-office */
+h2 { font-size: 1.15rem; margin: 0 0 0.75rem; }
+.section { margin-top: 1rem; }
+.details { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Status filter pills on the admin queue. */
+.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1rem; }
+.filters a {
+    padding: 0.3rem 0.85rem; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); color: var(--ink); text-decoration: none; font-size: 0.9rem;
+}
+.filters a.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* Date range filter on the admin queue: fields and buttons in one wrapping row. */
+.date-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem; margin: 0 0 1.25rem; }
+.date-filter label { margin: 0 0 0.25rem; font-size: 0.9rem; }
+.date-filter input[type="date"] { width: auto; }
+.date-filter .button { margin-top: 0; }
+
+/* Dispute history timeline */
+/* Dispute progress timeline: a vertical line with a dot per entry. */
+.timeline { list-style: none; margin: 0; padding: 0 0 0 1.1rem; border-left: 2px solid var(--line); }
+.timeline li { position: relative; padding: 0 0 1.1rem 0.9rem; }
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li::before {
+    content: ""; position: absolute; left: -1.5rem; top: 0.45rem; width: 0.65rem; height: 0.65rem;
+    border-radius: 50%; background: var(--brand); border: 2px solid var(--surface);
+}
+.timeline-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.timeline .meta { margin: 0.15rem 0 0; }
+.timeline .details { margin-top: 0.35rem; }
+
+/* Customer dispute history cards */
+.dispute-list { display: grid; gap: 1rem; }
+.dispute-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.5rem 1.25rem; }
+.dispute-head > div:first-child { flex: 1 1 14rem; }
+.dispute p.meta { margin: 0.35rem 0; }
+.plain-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+
+/* Notification badge in the header and the notifications page. */
+.badge { display: inline-block; min-width: 1.25rem; margin-left: 0.35rem; padding: 0 0.4rem; border-radius: 999px;
+         background: var(--lost-fg); color: #fff; font-size: 0.75rem; font-weight: 700; line-height: 1.25rem; text-align: center; }
+.notification-toolbar { display: flex; justify-content: flex-end; margin: 0 0 1.25rem; }
+.notification-toolbar .button { margin-top: 0; }
+.notification-list { gap: 0.75rem; }
+.notification { padding: 1rem 1.25rem; border-left: 4px solid transparent; }
+.notification.unread { border-left-color: var(--brand); background: #f3faf8; }
+.notification-message { margin: 0 0 0.35rem; }
+.notification .meta { margin: 0; }
+.notification .actions { align-items: center; gap: 1.25rem; margin-top: 0.75rem; }
+.notification .actions form { margin: 0; }
+.notification .link-button { color: var(--brand); }

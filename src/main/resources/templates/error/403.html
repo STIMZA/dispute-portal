@@ -1,0 +1,12 @@
+<!--/* Shown for HTTP 403: access denied, e.g. a customer opening an admin page. Spring Boot picks templates/error/<status>.html automatically. No error details are shown to users. */-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Access denied')}"></head>
+<body class="centered">
+<main class="card narrow">
+    <h1>Access denied</h1>
+    <p>You don't have permission to view this page.</p>
+    <a class="button" th:href="@{/}">Go back</a>
+</main>
+</body>
+</html>
